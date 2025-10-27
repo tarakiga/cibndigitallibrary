@@ -52,10 +52,12 @@ venv.bak/
 # Docker
 .dockerignore
 
-# Documentation (except README.md and docs/)
+# Documentation (except README.md and docs/gitbook)
 /*.md
 !/README.md
 PRD.txt
+docs/*.md
+!docs/gitbook/
 
 # Backend test/debug/utility scripts (not needed in production)
 backend/.env.example
