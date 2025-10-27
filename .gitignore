@@ -72,3 +72,10 @@ backend/setup_local_files.py
 backend/simple_login_test.py
 backend/test_*.py
 backend/update_password.py
+
+# Frontend test/dev files (not needed in production)
+frontend/.env.local
+frontend/.env.local.bak
+frontend/jest.config.js
+frontend/jest.setup.js
+frontend/coverage/
