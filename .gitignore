@@ -51,7 +51,7 @@ venv.bak/
 # Docker
 .dockerignore
 
-# Documentation (except README.md)
-*.md
-!README.md
+# Documentation (except README.md and docs/)
+/*.md
+!/README.md
 PRD.txt
