@@ -55,3 +55,20 @@ venv.bak/
 /*.md
 !/README.md
 PRD.txt
+
+# Backend test/debug/utility scripts (not needed in production)
+backend/.env.example
+backend/.env.test
+backend/check_*.py
+backend/clear_*.py
+backend/create_test_users.py
+backend/create_better_samples.py
+backend/debug_*.py
+backend/fix_*.py
+backend/list_content.py
+backend/paytest.py
+backend/seed_*.py
+backend/setup_local_files.py
+backend/simple_login_test.py
+backend/test_*.py
+backend/update_password.py
