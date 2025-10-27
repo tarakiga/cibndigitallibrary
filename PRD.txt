@@ -1,0 +1,123 @@
+# **Product Requirements Document (PRD)**  
+**Product Name**: CIBN Digital Library  
+**Version**: 1.1  
+**Date**: [Insert Date]  
+
+---
+
+## **1. Introduction**  
+### **1.1 Overview**  
+The **CIBN Digital Library** is a comprehensive digital platform for the **Chartered Institute of Bankers of Nigeria (CIBN)**, offering:  
+- **Digital Content**: Documents (PDFs), videos, audio files, e-books.  
+- **Physical Resources**: Examination textbooks, stationery, souvenirs.  
+- **Role-Based Access**:  
+  - **Public Users**: Purchase general content.  
+  - **CIBN Staff (Verified)**: Access exclusive materials (e.g., internal publications).  
+  - **Admins**: Manage content, users, and orders.  
+
+### **1.2 Goals**  
+- Enable seamless access to **multimedia resources** (documents, videos, audio).  
+- Integrate **Paystack** for secure payments (test credentials provided).  
+- Ensure CIBN staff verification via **ID authentication**.  
+
+---
+
+## **2. Target Users & Roles**  
+| **Role**         | **Permissions** |  
+|------------------|----------------|  
+| **Subscriber**   | Purchase general content. |  
+| **CIBN Member**   | Access exclusive content (verified via ID). |  
+| **Admin**        | Full system control (content, users, orders). |  
+
+---
+
+## **3. Key Features**  
+### **3.1 Authentication & Access Control**  
+#### **Login Flow**  
+1. **User Selection**:  
+   - **CIBN Member**: Enter **Employee ID** → Backend verification → Dashboard.  
+   - **General User**: Email/password or social login → Dashboard.  
+
+#### **Exclusive Content Access**  
+- CIBN Staff see a **"Restricted" tag** on exclusive items.  
+- Non-staff users receive: *"Upgrade your account for access"* prompt.  
+
+### **3.2 Content Types & Delivery**  
+| **Type**       | **Format**          | **Access** |  
+|----------------|---------------------|------------|  
+| Documents      | PDF, Word           | Download   |  
+| Videos         | MP4, Streaming      | Online     |  
+| Audio          | MP3, Streaming      | Online     |  
+| Physical Items | Books, Stationery   | Shipping   |  
+
+### **3.3 Search & Filtering**  
+- **Filters**:  
+  - Content type (Document/Video/Audio/Physical).  
+  - Category (Exam texts, CIBN publications, etc.).  
+  - Price range.  
+
+### **3.4 Payments (Paystack Integration)**  
+- **Test Credentials**:  
+  - **Secret Key**: `sk_test_e9272d1a6403a93da80debacfd88225455f67b7`  
+  - **Public Key**: `pk_test_9d7f16b2c1e0572489aeb98d89b9cd96c378b6cd`  
+- **Flow**:  
+  1. Cart → Checkout → Paystack modal.  
+  2. Card/transfer payment → Confirmation email.  
+
+### **3.5 Admin/Member Dashboards**  
+- **Admin**:  
+  - Upload/delete content (drag-and-drop for documents/videos).  
+  - Monitor transactions (Paystack webhooks).  
+- **CIBN Member**:  
+  - View/download exclusive content.  
+  - Track order history.  
+
+---
+
+## **4. UI/UX Design**  
+### **4.1 Branding**  
+- **Colors**: Gold (`#FFD700`), Navy Blue (`#002366`), White.  
+- **Logo**: [CIBN Logomark](https://cibng.org/wp-content/uploads/2025/05/cibnlogo.png).  
+
+### **4.2 Interactions**  
+- **Gestures**: Swipeable content carousels, pull-to-refresh.  
+- **Animations**: Smooth transitions between content types.  
+
+---
+### 5. Tech Stack
+frontend-React shadcn
+backend-FASTAPI 
+databse-postgres
+
+
+## **6. Contact**  
+**Chartered Institute of Bankers of Nigeria**  
+📍 Adeola Hopewell Street, Victoria Island, Lagos  
+📞 +234 (0) 1 461 1843 | (0700-DIAL-CIBN)  
+📧 cibn@cibng.org  
+
+---
+
+This version includes:  
+✅ **Paystack integration** with test keys.  
+✅ **Multimedia content** (documents, videos, audio).   
+
+
+web app tech preferences
+For websites, use Astro
+For desktop apps, use Tauri v2+sveltekit
+
+
+
+
+{
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+	"-y",
+	"@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {},
+      "working_directory": null
+    }
+}
