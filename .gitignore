@@ -50,3 +50,8 @@ venv.bak/
 
 # Docker
 .dockerignore
+
+# Documentation (except README.md)
+*.md
+!README.md
+PRD.txt
