@@ -5,15 +5,12 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package and npm config files
+COPY package*.json .npmrc ./
 
 # Install ALL dependencies (including dev) — required for Next.js build
-# Add retry logic and increase timeout for network issues
-RUN npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retries 5 && \
-    npm ci
+# .npmrc contains network resilience settings
+RUN npm ci --loglevel=verbose || npm ci --loglevel=verbose || npm ci
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
