@@ -4,6 +4,9 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000';
 const PORT = parseInt(process.env.PORT || '3001', 10); // Using port 3001 as 3000 is in use
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker builds
+  output: 'standalone',
+  
   // Note: devServer is not a valid option in Next.js 13+
   // The development server port is now configured via the -p flag in package.json
   
