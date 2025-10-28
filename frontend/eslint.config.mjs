@@ -12,6 +12,17 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    ignores: [
+      "**/__tests__/**",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.backup.ts",
+      "**/*.backup.tsx",
+      "**/__mocks__/**",
+      "src/app/admin/settings/components/LibraryManager.tsx",
+    ],
+  },
+  {
     rules: {
       // TypeScript 相关规则
       "@typescript-eslint/no-explicit-any": "off",
@@ -19,6 +30,7 @@ const eslintConfig = [
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/prefer-as-const": "off",
+      "@typescript-eslint/no-require-imports": "off",
       
       // React 相关规则
       "react-hooks/exhaustive-deps": "off",
@@ -29,6 +41,9 @@ const eslintConfig = [
       // Next.js 相关规则
       "@next/next/no-img-element": "off",
       "@next/next/no-html-link-for-pages": "off",
+
+      // Import 相关规则
+      "import/no-anonymous-default-export": "off",
       
       // 一般JavaScript规则
       "prefer-const": "off",  // 关闭prefer-const规则

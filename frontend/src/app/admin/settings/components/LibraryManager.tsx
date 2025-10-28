@@ -1770,10 +1770,10 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
       </button>
     )}
   </div>
-          </form >
-        </div >
-      </div >
-    </div >);
+          </form>
+        </div>
+      </div>
+    </div>);
 };
 
 export default LibraryManager;
