@@ -98,7 +98,7 @@ export function LibraryManager({
             onFileUpload={onFileUpload}
             onSubmit={handleFormSubmit}
             onCancel={handleCancel}
-            onDelete={isEditing ? onDelete : undefined}
+            onDelete={isEditing ? () => onDelete(formData.id || '') : undefined}
             categories={categories}
             availableTags={availableTags}
             isUploading={isUploading}

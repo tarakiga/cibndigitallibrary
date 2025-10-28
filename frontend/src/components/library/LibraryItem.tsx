@@ -1,5 +1,5 @@
 import { FileText, Image as ImageIcon, Video, Check, Edit, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
-import { LibraryItem } from './types';
+import type { LibraryItem } from './types';
 import { cn } from '@/lib/utils';
 
 interface LibraryItemProps {

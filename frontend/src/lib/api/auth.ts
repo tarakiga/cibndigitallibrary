@@ -291,7 +291,7 @@ export const authService = {
   },
 
   // Private helper methods
-  private setAuthData(authData: AuthResponse): void {
+  setAuthData(authData: AuthResponse): void {
     if (typeof window === 'undefined') return
     
     const { access_token, refresh_token, user } = authData
@@ -309,17 +309,17 @@ export const authService = {
     }
   },
   
-  private setUserData(user: User): void {
+  setUserData(user: User): void {
     if (typeof window === 'undefined') return
     localStorage.setItem(USER_KEY, JSON.stringify(user))
   },
   
-  private setAccessToken(token: string): void {
+  setAccessToken(token: string): void {
     if (typeof window === 'undefined') return
     localStorage.setItem(TOKEN_KEY, token)
   },
   
-  private clearAuthData(): void {
+  clearAuthData(): void {
     if (typeof window === 'undefined') return
     
     localStorage.removeItem(TOKEN_KEY)
