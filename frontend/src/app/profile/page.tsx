@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 <h1 className="text-3xl font-bold">{user.full_name}</h1>
                 {getRoleBadge()}
                 {user.is_verified && (
-                  <CheckCircle2 className="w-5 h-5 text-green-300" title="Verified" />
+                  <CheckCircle2 className="w-5 h-5 text-green-300" />
                 )}
               </div>
               <p className="text-white/80 flex items-center gap-2 mb-1">

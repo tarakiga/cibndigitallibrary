@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart as ShoppingCartIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from './useCart';
 import { CartItem as CartItemComponent } from './CartItem';
 import { CartSummary } from './CartSummary';
 import { CheckoutForm } from './CheckoutForm';
-import { useAuth } from '@/lib/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ordersApi } from '@/lib/api/orders';
 
@@ -105,7 +105,7 @@ export const ShoppingCart = ({ isOpen, onClose }: ShoppingCartProps) => {
       <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <ShoppingCart className="w-6 h-6" />
+            <ShoppingCartIcon className="w-6 h-6" />
             Shopping Cart
           </DialogTitle>
           <DialogDescription>
@@ -115,7 +115,7 @@ export const ShoppingCart = ({ isOpen, onClose }: ShoppingCartProps) => {
 
         {cartItems.length === 0 ? (
           <div className="text-center py-12">
-            <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <ShoppingCartIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Your cart is empty</h3>
             <p className="text-gray-600 mb-6">Add some resources to get started</p>
             <Button onClick={onClose} className="bg-gradient-to-r from-green-600 to-green-700 text-white">

@@ -209,7 +209,7 @@ export default function MyLibraryPage() {
   }
 
   const ContentCard = ({ item, index }: { item: any; index: number }) => {
-    const progress = getProgress(item.id, item.content_type)
+    const progress = getProgress(item.id)
     const isFavorite = favorites.includes(item.id)
 
     return (
