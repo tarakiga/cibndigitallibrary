@@ -105,8 +105,8 @@ export default function AdminSettingsPage() {
   }, [isLoading, isAuthenticated, user, router]);
 
   // Handle tab change
-  const handleTabChange = useCallback((tab: ActiveTab) => {
-    setActiveTab(tab);
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab as ActiveTab);
   }, []);
 
   // Library Manager State
@@ -388,33 +388,29 @@ export default function AdminSettingsPage() {
                       title="Total Content"
                       value={libraryItems.length.toString()}
                       icon={Package}
-                      iconColor="text-blue-600"
-                      iconBgFrom="from-blue-100"
-                      iconBgTo="to-blue-200"
+                      color="blue"
+                      index={0}
                     />
                     <StatCard
                       title="Active Items"
                       value={libraryItems.filter(item => item.isFree || item.price > 0).length.toString()}
                       icon={BookOpen}
-                      iconColor="text-green-600"
-                      iconBgFrom="from-green-100"
-                      iconBgTo="to-green-200"
+                      color="green"
+                      index={1}
                     />
                     <StatCard
                       title="Exclusive"
                       value={libraryItems.filter(item => item.isExclusive).length.toString()}
                       icon={FileText}
-                      iconColor="text-amber-600"
-                      iconBgFrom="from-amber-100"
-                      iconBgTo="to-amber-200"
+                      color="gold"
+                      index={2}
                     />
                     <StatCard
                       title="Total Revenue"
                       value={`₦${libraryItems.reduce((sum, item) => sum + item.price, 0).toLocaleString()}`}
                       icon={CreditCard}
-                      iconColor="text-purple-600"
-                      iconBgFrom="from-purple-100"
-                      iconBgTo="to-purple-200"
+                      color="purple"
+                      index={3}
                     />
                   </div>
                 )}
@@ -424,7 +420,7 @@ export default function AdminSettingsPage() {
                   searchQuery={searchTerm}
                   onSearchChange={setSearchTerm}
                   sortBy={sortBy}
-                  onSortChange={setSortBy}
+                  onSortChange={(sort) => setSortBy(sort as 'title' | 'date' | 'price')}
                   selectedCount={selectedContentIds.length}
                   totalCount={libraryItems.length}
                   onBulkDelete={handleBulkDelete}
@@ -501,17 +497,17 @@ export default function AdminSettingsPage() {
                         }}
                         onEdit={(content) => {
                           setCurrentContent({
-                            id: content.id,
+                            id: parseInt(content.id),
                             title: content.title,
                             description: content.description,
                             content_type: content.type as any,
-                            category: content.category,
+                            category: content.category as ContentCategory,
                             price: content.price,
                             is_exclusive: content.isExclusive,
                             is_active: true,
                             stock_quantity: 0,
                             file_url: content.fileUrl,
-                            image_url: content.image
+                            thumbnail_url: content.image
                           });
                           setIsEditing(true);
                         }}
@@ -521,7 +517,7 @@ export default function AdminSettingsPage() {
                             title: `${content.title} (Copy)`,
                             description: content.description,
                             content_type: content.type as any,
-                            category: content.category,
+                            category: content.category as ContentCategory,
                             price: content.price,
                             is_exclusive: content.isExclusive,
                             is_active: true,

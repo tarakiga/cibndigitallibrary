@@ -110,8 +110,8 @@ export const FileUploader = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    // Call onFileSelect with empty file to clear the value
-    onFileSelect(new File([], ''), fileType, field);
+    // Call onFileSelect with null to clear the value
+    onFileSelect(null as any, fileType, field);
   };
 
   // Get file icon based on file type
