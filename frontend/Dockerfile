@@ -9,7 +9,11 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install ALL dependencies (including dev) — required for Next.js build
-RUN npm ci
+# Add retry logic and increase timeout for network issues
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm ci
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -40,10 +44,6 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-
-# Install only production dependencies (for standalone server)
-COPY package*.json ./
-RUN npm ci --only=production
 
 # Set permissions
 RUN chown -R nextjs:nodejs /app
