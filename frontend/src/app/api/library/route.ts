@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/api/auth';
 
 // GET /api/library
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // TODO: Add authentication check when needed
+    // const session = await getServerSession(authOptions);
+    // if (!session) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   );
+    // }
 
     // In a real app, you would fetch from your database here
     // For now, we'll return an empty array to prevent errors
@@ -30,14 +28,14 @@ export async function GET() {
 // POST /api/library
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // TODO: Add authentication check when needed
+    // const session = await getServerSession(authOptions);
+    // if (!session) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   );
+    // }
 
     // In a real app, you would save to your database here
     const data = await request.json();

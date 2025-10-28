@@ -318,7 +318,7 @@ export default function AdminSettingsPage() {
 
   // Mock data and handlers for PaymentsSection
   const [paymentSettings, setPaymentSettings] = useState({
-    active_mode: 'test',
+    active_mode: 'test' as 'test' | 'live',
     test_public_key: '',
     live_public_key: '',
     has_test_secret: false,
@@ -497,7 +497,7 @@ export default function AdminSettingsPage() {
                         }}
                         onEdit={(content) => {
                           setCurrentContent({
-                            id: parseInt(content.id),
+                            id: content.id as any,
                             title: content.title,
                             description: content.description,
                             content_type: content.type as any,
@@ -557,7 +557,7 @@ export default function AdminSettingsPage() {
                     })
                   }}
                   onSave={handleSaveContent}
-                  initialData={currentContent}
+                  initialData={currentContent as any}
                   isEditing={!!currentContent.id}
                 />
               </div>

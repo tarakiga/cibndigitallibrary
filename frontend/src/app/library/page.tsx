@@ -198,7 +198,7 @@ export default function LibraryPage() {
     
     try {
       const response = await contentService.getContent({
-        type: selectedType === 'all' ? undefined : selectedType as any,
+        content_type: selectedType === 'all' ? undefined : selectedType as any,
         category: selectedCategory === 'all' ? undefined : selectedCategory as any,
         search: searchQuery || undefined,
         min_price: priceRange[0],
@@ -208,8 +208,7 @@ export default function LibraryPage() {
       });
       
       const items = Array.isArray(response) ? response : 
-                  (response && Array.isArray(response.items) ? response.items : 
-                  (Array.isArray(response?.data) ? response.data : []));
+                  (response && Array.isArray(response.items) ? response.items : []);
       
       if (!items.length) {
         console.warn('No content items found in response');

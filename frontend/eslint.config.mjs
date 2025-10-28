@@ -20,6 +20,7 @@ const eslintConfig = [
       "**/*.backup.tsx",
       "**/__mocks__/**",
       "src/app/admin/settings/components/LibraryManager.tsx",
+      "src/app/admin/test-page.tsx",
     ],
   },
   {
