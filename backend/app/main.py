@@ -9,7 +9,7 @@ import os
 import traceback
 from app.core.config import settings
 from app.api.routes import auth, content, orders, admin_settings, user_content, upload, progress
-from app.db.session import engine, Base
+from app.db.session import engine, Base, wait_for_db
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -21,6 +21,9 @@ app = FastAPI(
 @app.on_event("startup")
 def startup_event():
     if os.getenv("TESTING") != "true":
+        print("Waiting for database to be ready...")
+        wait_for_db()
+        print("Database ready, creating tables...")
         Base.metadata.create_all(bind=engine)
     # Log CORS origins
     print(f"CORS Origins: {settings.CORS_ORIGINS}")
