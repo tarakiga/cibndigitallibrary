@@ -12,7 +12,12 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Database settings
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL") or "postgresql://user:password@localhost/db"
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Debug: print actual DATABASE_URL being used
+        print(f"[CONFIG] DATABASE_URL: {self.DATABASE_URL[:50]}...")
 
     # JWT settings
     SECRET_KEY: str = os.getenv("SECRET_KEY", "a_very_secret_key")
