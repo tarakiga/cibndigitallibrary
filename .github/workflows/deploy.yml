@@ -38,12 +38,8 @@ jobs:
             git fetch --all --prune
             git reset --hard origin/main
             
-            # .env file should already exist on server
-            echo "🔐 Checking .env file..."
-            if [ ! -f .env ]; then
-              echo "⚠️  .env file not found! Please create it manually on the server."
-              exit 1
-            fi
+            # .env file is already on server
+            echo "🔐 Using existing .env file..."
             
             # Deploy backend
             echo "🔨 Building and deploying backend..."
