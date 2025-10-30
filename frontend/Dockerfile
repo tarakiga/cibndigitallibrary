@@ -33,6 +33,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Pass the build arg through to runtime
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
