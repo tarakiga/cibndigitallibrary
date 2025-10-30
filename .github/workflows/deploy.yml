@@ -30,27 +30,27 @@ jobs:
             whoami
             pwd
             
-            # Navigate and update repository
-            if [ ! -d /home/cibndigitallibrary ]; then
-              echo "Creating directory and cloning repository..."
-              mkdir -p /home/cibndigitallibrary
-              git clone https://github.com/tarakiga/cibndigitallibrary.git /home/cibndigitallibrary
-              cd /home/cibndigitallibrary
+            # Ensure directory exists
+            mkdir -p /home/cibndigitallibrary
+            cd /home/cibndigitallibrary
+            
+            # Pull latest changes (simple approach)
+            echo "📥 Pulling latest changes..."
+            if [ -d .git ]; then
+              git fetch origin main || true
+              git reset --hard origin/main || true
             else
-              cd /home/cibndigitallibrary
-              if [ ! -d .git ]; then
-                echo "Not a git repo, initializing..."
-                git init
-                git remote add origin https://github.com/tarakiga/cibndigitallibrary.git || true
-              fi
-              echo "📥 Pulling latest changes..."
-              git fetch --all --prune || git pull origin main || true
-              git checkout main || git checkout -b main || true
-              git reset --hard origin/main || git pull origin main
+              git clone https://github.com/tarakiga/cibndigitallibrary.git . || true
             fi
             
-            # .env file is already on server
-            echo "🔐 Using existing .env file..."
+            # Create .env from GitHub secret
+            set +x  # Don't print secret
+            echo "🔐 Creating .env from GitHub secret..."
+            cat > .env << 'EOFENV'
+            ${{ secrets.DOTENV }}
+            EOFENV
+            chmod 600 .env
+            set -x
             
             # Deploy backend
             echo "🔨 Building and deploying backend..."
