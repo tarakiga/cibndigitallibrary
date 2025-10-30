@@ -25,16 +25,20 @@ jobs:
           script: |
             set -exuo pipefail
             
+            # Error trap for diagnostics
+            trap 'echo "ERROR at line $LINENO: $BASH_COMMAND"; docker ps -a || true; docker logs --tail 200 cibn_backend_prod || true; exit 1' ERR
+            
             # Diagnostics
             echo "---- Remote diagnostics ----"
             whoami
             pwd
+            docker --version || true
             
             # Ensure directory exists
             mkdir -p /home/cibndigitallibrary
             cd /home/cibndigitallibrary
             
-            # Pull latest changes (simple approach)
+            # Pull latest changes
             echo "📥 Pulling latest changes..."
             if [ -d .git ]; then
               git fetch origin main || true
@@ -43,14 +47,15 @@ jobs:
               git clone https://github.com/tarakiga/cibndigitallibrary.git . || true
             fi
             
-            # Create .env from GitHub secret
-            set +x  # Don't print secret
+            # Create .env from GitHub secret (safe single-line write)
+            set +x
             echo "🔐 Creating .env from GitHub secret..."
-            cat > .env << 'EOFENV'
-            ${{ secrets.DOTENV }}
-            EOFENV
+            printf '%s\n' "${{ secrets.DOTENV }}" > .env
             chmod 600 .env
             set -x
+            
+            # Ensure docker network exists
+            docker network inspect cibndigitallibrary_cibn_network >/dev/null 2>&1 || docker network create cibndigitallibrary_cibn_network
             
             # Deploy backend
             echo "🔨 Building and deploying backend..."
