@@ -2,6 +2,8 @@
 
 A comprehensive digital platform for the Chartered Institute of Bankers of Nigeria (CIBN), offering digital and physical resources with role-based access control.
 
+**Status**: ✅ Live in Production
+
 ## Features
 
 - 📚 **Multi-format Content**: PDFs, videos, audio files, e-books, and physical items
