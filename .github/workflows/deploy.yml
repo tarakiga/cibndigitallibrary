@@ -18,12 +18,12 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd /opt/cibn-library
+            cd /home/cibndigitallibrary
             
             # Pull latest changes
             echo "📥 Pulling latest changes from GitHub..."
@@ -48,34 +48,55 @@ jobs:
             EOF
             fi
             
-            # Stop existing containers
-            echo "🛑 Stopping existing containers..."
-            docker-compose -f docker-compose.prod.yml down
+            # Deploy backend
+            echo "🔨 Building and deploying backend..."
+            docker stop cibn_backend_prod || true
+            docker rm cibn_backend_prod || true
+            docker-compose -f docker-compose.prod.yml build --no-cache backend
+            docker run -d \
+              --name cibn_backend_prod \
+              --network cibndigitallibrary_cibn_network \
+              -p 8000:8000 \
+              --env-file /home/cibndigitallibrary/.env \
+              --restart unless-stopped \
+              -v uploads_data:/app/uploads \
+              cibndigitallibrary_backend
             
-            # Rebuild and start containers
-            echo "🔨 Building and starting containers..."
-            docker-compose -f docker-compose.prod.yml up -d --build
-            
-            # Run database migrations
-            echo "🗄️  Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T backend alembic upgrade head || echo "⚠️  Migration skipped (manual migration may be required)"
+            # Deploy frontend
+            echo "🔨 Building and deploying frontend..."
+            docker stop cibn_frontend_prod || true
+            docker rm cibn_frontend_prod || true
+            docker rmi cibndigitallibrary_frontend || true
+            docker build \
+              --build-arg NEXT_PUBLIC_API_URL=http://83.101.49.191:8000/api/v1 \
+              --no-cache \
+              -t cibndigitallibrary_frontend \
+              -f frontend/Dockerfile \
+              frontend/
+            docker run -d \
+              --name cibn_frontend_prod \
+              --network cibndigitallibrary_cibn_network \
+              -p 3000:3000 \
+              -e NODE_ENV=production \
+              --restart unless-stopped \
+              cibndigitallibrary_frontend
             
             # Check container status
             echo "✅ Checking container status..."
-            docker-compose -f docker-compose.prod.yml ps
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             
             # Clean up old images
             echo "🧹 Cleaning up old Docker images..."
-            docker image prune -af --filter "until=24h"
+            docker system prune -f
             
             echo "🎉 Deployment completed successfully!"
 
       - name: Health Check
         run: |
           echo "🏥 Waiting for services to be healthy..."
-          sleep 30
-          curl -f ${{ secrets.NEXT_PUBLIC_API_URL }}/health || echo "⚠️  Backend health check failed"
-          curl -f ${{ secrets.FRONTEND_URL }} || echo "⚠️  Frontend health check failed"
+          sleep 60
+          curl -f http://83.101.49.191:8000/health || echo "⚠️  Backend health check failed"
+          curl -f http://83.101.49.191:3000 || echo "⚠️  Frontend health check failed"
 
       - name: Notify Deployment Status
         if: always()
