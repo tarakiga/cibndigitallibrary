@@ -12,7 +12,7 @@ import authService from "./auth";
 
 const isDev = process.env.NODE_ENV === "development";
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 
 // Type guards
 type ErrorWithMessage = { message: string };
