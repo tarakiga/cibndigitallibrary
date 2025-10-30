@@ -19,7 +19,11 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || ssh-keyscan "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          # Use default port 22 if SSH_PORT is not set
+          PORT="${{ secrets.SSH_PORT }}"
+          if [ -z "$PORT" ]; then PORT="22"; fi
+          echo "Adding SSH host key for ${{ secrets.SSH_HOST }} on port $PORT..."
+          ssh-keyscan -p "$PORT" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>&1 || ssh-keyscan "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>&1
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to Server
