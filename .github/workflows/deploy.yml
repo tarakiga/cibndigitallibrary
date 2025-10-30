@@ -30,13 +30,24 @@ jobs:
             whoami
             pwd
             
-            # Navigate to project directory
-            cd /home/cibndigitallibrary || { echo "Directory missing"; exit 1; }
-            
-            # Pull latest changes
-            echo "📥 Pulling latest changes from GitHub..."
-            git fetch --all --prune
-            git reset --hard origin/main
+            # Navigate and update repository
+            if [ ! -d /home/cibndigitallibrary ]; then
+              echo "Creating directory and cloning repository..."
+              mkdir -p /home/cibndigitallibrary
+              git clone https://github.com/tarakiga/cibndigitallibrary.git /home/cibndigitallibrary
+              cd /home/cibndigitallibrary
+            else
+              cd /home/cibndigitallibrary
+              if [ ! -d .git ]; then
+                echo "Not a git repo, initializing..."
+                git init
+                git remote add origin https://github.com/tarakiga/cibndigitallibrary.git || true
+              fi
+              echo "📥 Pulling latest changes..."
+              git fetch --all --prune || git pull origin main || true
+              git checkout main || git checkout -b main || true
+              git reset --hard origin/main || git pull origin main
+            fi
             
             # .env file is already on server
             echo "🔐 Using existing .env file..."
