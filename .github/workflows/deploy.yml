@@ -21,31 +21,28 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /home/cibndigitallibrary
+            set -exuo pipefail
+            
+            # Diagnostics
+            echo "---- Remote diagnostics ----"
+            whoami
+            pwd
+            
+            # Navigate to project directory
+            cd /home/cibndigitallibrary || { echo "Directory missing"; exit 1; }
             
             # Pull latest changes
             echo "📥 Pulling latest changes from GitHub..."
-            git pull origin main
+            git fetch --all --prune
+            git reset --hard origin/main
             
-            # Create .env file from secrets if it doesn't exist
+            # .env file should already exist on server
+            echo "🔐 Checking .env file..."
             if [ ! -f .env ]; then
-              echo "📝 Creating .env file..."
-              cat > .env << EOF
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            SECRET_KEY=${{ secrets.SECRET_KEY }}
-            CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_SECRET_KEY }}
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-            CIBN_DB_SERVER=${{ secrets.CIBN_DB_SERVER }}
-            CIBN_DB_DATABASE=${{ secrets.CIBN_DB_DATABASE }}
-            CIBN_DB_USERNAME=${{ secrets.CIBN_DB_USERNAME }}
-            CIBN_DB_PASSWORD=${{ secrets.CIBN_DB_PASSWORD }}
-            EOF
+              echo "⚠️  .env file not found! Please create it manually on the server."
+              exit 1
             fi
             
             # Deploy backend
@@ -81,9 +78,13 @@ jobs:
               --restart unless-stopped \
               cibndigitallibrary_frontend
             
-            # Check container status
+            # Check container status and logs
             echo "✅ Checking container status..."
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "---- Backend logs (last 50 lines) ----"
+            docker logs --tail 50 cibn_backend_prod || true
+            echo "---- Frontend logs (last 50 lines) ----"
+            docker logs --tail 50 cibn_frontend_prod || true
             
             # Clean up old images
             echo "🧹 Cleaning up old Docker images..."
