@@ -15,39 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Add SSH host key
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          
-          SSH_HOST="${{ secrets.SSH_HOST }}"
-          if [ -z "$SSH_HOST" ]; then
-            echo "ERROR: SSH_HOST secret is missing"
-            exit 1
-          fi
-          
-          PORT="${{ secrets.SSH_PORT }}"
-          if [ -z "$PORT" ]; then PORT="22"; fi
-          
-          echo "Adding SSH host key for $SSH_HOST on port $PORT..."
-          
-          retries=5
-          attempt=0
-          until ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null; do
-            attempt=$((attempt+1))
-            echo "ssh-keyscan attempt $attempt/$retries failed; retrying in 5s..."
-            sleep 5
-            if [ "$attempt" -ge "$retries" ]; then
-              echo "ERROR: Unable to fetch SSH host key after $retries attempts"
-              echo "Please verify SSH_HOST and SSH_PORT secrets are correct"
-              exit 1
-            fi
-          done
-          
-          chmod 644 ~/.ssh/known_hosts
-          echo "✅ SSH host key added"
-
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.0
         with:
