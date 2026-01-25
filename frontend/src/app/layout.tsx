@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import { Asap } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "sonner";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/sections/footer";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/contexts/AuthContext";
+import type { Metadata } from "next";
+import { Asap } from "next/font/google";
+import { Toaster as Sonner } from "sonner";
+import "./globals.css";
 
 const asap = Asap({
   variable: "--font-asap",
@@ -29,6 +29,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CIBN Digital Library",
     description: "Excellence in Banking Education",
+  },
+  icons: {
+    icon: "/favicon.ico",
   },
 };
 

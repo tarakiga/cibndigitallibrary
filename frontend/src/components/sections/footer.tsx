@@ -1,12 +1,11 @@
 'use client'
 
-import Link from 'next/link'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import { Facebook, Twitter, Linkedin, Instagram, Mail, Phone, MapPin, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { ChevronRight, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Twitter } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 export function Footer() {
@@ -99,7 +98,7 @@ export function Footer() {
             <div className="flex items-center space-x-3">
               <div className="relative w-14 h-14 bg-white rounded-full flex items-center justify-center p-2">
                 <Image
-                  src="https://cibng.org/wp-content/uploads/2025/05/cibnlogo.png"
+                  src="/cibnlogo.png"
                   alt="CIBN Logo"
                   width={48}
                   height={48}

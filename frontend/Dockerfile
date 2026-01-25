@@ -10,7 +10,7 @@ COPY package*.json .npmrc ./
 
 # Install ALL dependencies (including dev) — required for Next.js build
 # .npmrc contains network resilience settings
-RUN npm ci --loglevel=verbose || npm ci --loglevel=verbose || npm ci
+RUN npm install
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder

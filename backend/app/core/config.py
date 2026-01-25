@@ -60,5 +60,17 @@ class Settings(BaseSettings):
     # Paystack settings
     PAYSTACK_SECRET_KEY: str = os.getenv("PAYSTACK_SECRET_KEY", "")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3001")
+    
+    # Email settings
+    SMTP_TLS: bool = os.getenv("SMTP_TLS", "true").lower() == "true"
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    EMAILS_FROM_EMAIL: str = os.getenv("EMAILS_FROM_EMAIL", "noreply@cibn.org")
+    EMAILS_FROM_NAME: str = os.getenv("EMAILS_FROM_NAME", "CIBN Digital Library")
+    
+    # Password reset settings
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
 
 settings = Settings()

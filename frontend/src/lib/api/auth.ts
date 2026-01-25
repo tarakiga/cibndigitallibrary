@@ -140,8 +140,8 @@ export const authService = {
    */
   async register(data: RegisterData): Promise<User> {
     try {
-      const response = await apiClient.post<{ user: User }>('/auth/register', data)
-      return response.data.user
+      const response = await apiClient.post<User>('/auth/register', data)
+      return response.data
     } catch (error) {
       console.error('Registration failed:', error)
       throw error
@@ -153,7 +153,9 @@ export const authService = {
    */
   async forgotPassword(email: string): Promise<void> {
     try {
-      await apiClient.post('/auth/forgot-password', { email })
+      await apiClient.post('/auth/forgot-password', null, {
+        params: { email }
+      })
     } catch (error) {
       console.error('Password reset request failed:', error)
       throw error
@@ -165,7 +167,9 @@ export const authService = {
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
     try {
-      await apiClient.post('/auth/reset-password', { token, new_password: newPassword })
+      await apiClient.post('/auth/reset-password', null, {
+        params: { token, new_password: newPassword }
+      })
     } catch (error) {
       console.error('Password reset failed:', error)
       throw error

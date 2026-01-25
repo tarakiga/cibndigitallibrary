@@ -1,23 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { ForgotPasswordModal } from '@/components/auth/forgot-password-modal'
 import { LoginModal } from '@/components/auth/login-modal'
 import { SignupModal } from '@/components/auth/signup-modal'
-import { ForgotPasswordModal } from '@/components/auth/forgot-password-modal'
 import { ShoppingCart } from '@/components/cart/shopping-cart'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/contexts/AuthContext'
 import { contentService } from '@/lib/api/content'
-import { Menu, Search, ShoppingCart as ShoppingCartIcon, BookOpen, Users, Settings, LogOut, Star, Crown, User } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { storePurchasedContent } from '@/utils/storage'
+import { motion } from 'framer-motion'
+import { BookOpen, LogOut, Menu, Search, Settings, ShoppingCart as ShoppingCartIcon, User, Users } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 export function Navbar() {
   const router = useRouter()
@@ -105,7 +105,7 @@ export function Navbar() {
             <Link href="/" className="flex items-center space-x-3 group">
               <div className="relative w-12 h-12 transition-transform duration-300 group-hover:scale-110">
                 <Image
-                  src="https://cibng.org/wp-content/uploads/2025/05/cibnlogo.png"
+                  src="/cibnlogo.png"
                   alt="CIBN Logo"
                   width={48}
                   height={48}
