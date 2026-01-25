@@ -47,6 +47,13 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # Verify installation
 docker compose version
+
+### Troubleshooting Docker
+If you see "Cannot connect to the Docker daemon", it means Docker is not running. Start it:
+```bash
+systemctl start docker
+systemctl enable docker
+```
 ```
 
 ## 3. Application Deployment
