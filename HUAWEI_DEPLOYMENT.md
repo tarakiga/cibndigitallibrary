@@ -100,5 +100,5 @@ docker compose -f docker-compose.prod.yml up -d --build
 ### Create Superuser
 To access the admin panel, create a superuser account:
 ```bash
-docker exec -it cibn_backend_prod python -m app.cli create-superuser admin@cibn.org YourStrongPassword!
+docker exec -it cibn_backend_prod python create_admin.py admin@cibn.org YourStrongPassword!
 ```
