@@ -8,9 +8,8 @@ WORKDIR /app
 # Copy package and npm config files
 COPY package*.json .npmrc ./
 
-# Install ALL dependencies (including dev) — required for Next.js build
-# .npmrc contains network resilience settings
-RUN npm install
+# Install dependencies using clean install for production
+RUN npm ci
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder

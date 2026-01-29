@@ -42,6 +42,7 @@ services:
       CIBN_DB_DATABASE: ${CIBN_DB_DATABASE}
       CIBN_DB_USERNAME: ${CIBN_DB_USERNAME}
       CIBN_DB_PASSWORD: ${CIBN_DB_PASSWORD}
+      VIEW_NAME: ${VIEW_NAME}
     ports:
       - "8000:8000"
     volumes:
@@ -58,6 +59,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
     networks:
       - cibn_network
 
@@ -83,6 +90,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
     networks:
       - cibn_network
 

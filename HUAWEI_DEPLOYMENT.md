@@ -96,9 +96,39 @@ docker compose -f docker-compose.prod.yml up -d --build
     docker compose -f docker-compose.prod.yml up -d --build
     ```
 
-## 6. Administration
+## 7. Performance & Resource Tuning
+To prevent server deadlocks and high memory spikes on Huawei Cloud:
+
+### Memory Limits (Shared Server)
+Since this server hosts **3 applications**, we use Docker resource limits to prevent any single app from exhausting the 16GB RAM.
+- **Backend**: 512MB RAM Limit.
+- **Frontend**: 1024MB RAM Limit (Adjustable to 2GB if builds are on-server).
+
+### Build Optimization
+The Next.js build process is resource-intensive. With 16GB RAM, you have more headroom, but 3 concurrent builds will still spike.
+**Recommendation**:
+-   **Build Off-Server**: Build images locally and push to Huawei SWR.
+-   **Swap File**: Even with 16GB, ensure a **2GB Swap File** is active as a safety net for shared workloads.
+
+### Domain & EIP Transition
+Currently, `elibrary.cibng.org` is not yet connected, so the **Elastic IP (83.101.48.103)** is the primary access point.
+1.  **Phase 1 (Current)**: URLs in `.env` should use `http://83.101.48.103`.
+2.  **Phase 2 (Post-DNS)**: Once the domain is live, update `.env` URLs to `http://elibrary.cibng.org` and rebuild the frontend (`docker compose up -d --build`).
+
+### Configuration Alignment
+Ensure your `.env` matches the production requirements:
+-   **CORS_ORIGINS**: Should include **both** the EIP and the Domain: `["http://83.101.48.103", "http://elibrary.cibng.org"]`
+-   **VIEW_NAME**: Set this to the external SQL view name (e.g., `vw_eLibrary`).
+-   **Password Escaping**: If your password contains `$`, escape it with another `$` (e.g., `pass$$word`).
+
+## 8. Administration
 ### Create Superuser
 To access the admin panel, create a superuser account:
 ```bash
 docker exec -it cibn_backend_prod python create_admin.py admin@cibn.org YourStrongPassword!
 ```
+
+## 9. Shared Server Checklist
+If multiple apps share this server:
+1. **Stagger Builds**: Do not run `docker compose up --build` for multiple apps simultaneously.
+2. **Global Nginx**: Use a single host-level Nginx to route traffic to different ports (8000, 8001, etc.) for each app.

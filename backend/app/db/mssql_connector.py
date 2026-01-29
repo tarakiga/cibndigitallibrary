@@ -30,9 +30,9 @@ class MSSQLConnector:
             A dictionary with member data if authentication is successful, otherwise None.
         """
         conn_str = self.get_connection_string()
-        query = """
+        query = f"""
             SELECT MemberId, Password, Surname, FirstName, Arrears, AnnualSub, Category, Email
-            FROM Members
+            FROM {settings.VIEW_NAME}
             WHERE MemberId = ?
         """
 

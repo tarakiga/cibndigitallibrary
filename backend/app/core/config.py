@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     CIBN_DB_DATABASE: str = os.getenv("CIBN_DB_DATABASE", "cibn_members")
     CIBN_DB_USERNAME: str = os.getenv("CIBN_DB_USERNAME", "user")
     CIBN_DB_PASSWORD: str = os.getenv("CIBN_DB_PASSWORD", "password")
+    VIEW_NAME: str = os.getenv("VIEW_NAME", "Members")
     
     # Paystack settings
     PAYSTACK_SECRET_KEY: str = os.getenv("PAYSTACK_SECRET_KEY", "")
