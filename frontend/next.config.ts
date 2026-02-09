@@ -32,6 +32,11 @@ const nextConfig: NextConfig = {
         pathname: '/wp-content/uploads/**',
       },
       {
+        protocol: 'https',
+        hostname: 'elibrary.cibng.org',
+        pathname: '/uploads/**',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
         port: '8000',
