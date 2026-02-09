@@ -3,13 +3,16 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from app.db.session import get_db
 from app.api.dependencies import require_admin
-from app.models import PaymentSettings
+from app.models import PaymentSettings, EmailSettings
 from app.schemas import PaymentSettingsResponse, PaymentSettingsUpdate
+from app.schemas.settings import EmailSettingsResponse, EmailSettingsUpdate, EmailTestRequest
 
 router = APIRouter(prefix="/admin/settings", tags=["Admin Settings"])
 
 
-def ensure_singleton(db: Session) -> PaymentSettings:
+# ============== Payment Settings ==============
+
+def ensure_payment_singleton(db: Session) -> PaymentSettings:
     settings = db.query(PaymentSettings).first()
     if not settings:
         settings = PaymentSettings(active_mode="test")
@@ -21,7 +24,7 @@ def ensure_singleton(db: Session) -> PaymentSettings:
 
 @router.get("/payments", response_model=PaymentSettingsResponse)
 def get_payment_settings(db: Session = Depends(get_db), admin=Depends(require_admin)):
-    s = ensure_singleton(db)
+    s = ensure_payment_singleton(db)
     return PaymentSettingsResponse(
         active_mode=s.active_mode,
         test_public_key=s.test_public_key,
@@ -33,7 +36,7 @@ def get_payment_settings(db: Session = Depends(get_db), admin=Depends(require_ad
 
 @router.put("/payments", response_model=PaymentSettingsResponse)
 def update_payment_settings(payload: PaymentSettingsUpdate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    s = ensure_singleton(db)
+    s = ensure_payment_singleton(db)
     if payload.active_mode is not None:
         s.active_mode = payload.active_mode
     if payload.test_public_key is not None:
@@ -58,7 +61,7 @@ def update_payment_settings(payload: PaymentSettingsUpdate, db: Session = Depend
 
 @router.post("/payments/test")
 async def test_payment_settings(db: Session = Depends(get_db), admin=Depends(require_admin)):
-    s = ensure_singleton(db)
+    s = ensure_payment_singleton(db)
     # Choose secret for active mode with fallback to env
     from app.core.config import settings as app_settings
     secret = None
@@ -89,3 +92,82 @@ async def test_payment_settings(db: Session = Depends(get_db), admin=Depends(req
         secret_key_override=secret,
     )
     return {"ok": True, "message": "Credentials valid", "reference": data.get("reference"), "mode": s.active_mode}
+
+
+# ============== Email Settings ==============
+
+def ensure_email_singleton(db: Session) -> EmailSettings:
+    """Ensure a single EmailSettings record exists."""
+    settings = db.query(EmailSettings).first()
+    if not settings:
+        settings = EmailSettings()
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    return settings
+
+
+@router.get("/email", response_model=EmailSettingsResponse)
+def get_email_settings(db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Get current email/SMTP configuration."""
+    s = ensure_email_singleton(db)
+    return EmailSettingsResponse(
+        smtp_host=s.smtp_host,
+        smtp_port=s.smtp_port or 587,
+        smtp_user=s.smtp_user,
+        has_password=bool(s.smtp_password),
+        smtp_tls=s.smtp_tls if s.smtp_tls is not None else True,
+        emails_from_email=s.emails_from_email,
+        emails_from_name=s.emails_from_name or "CIBN Digital Library",
+    )
+
+
+@router.put("/email", response_model=EmailSettingsResponse)
+def update_email_settings(payload: EmailSettingsUpdate, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Update email/SMTP configuration."""
+    s = ensure_email_singleton(db)
+    
+    if payload.smtp_host is not None:
+        s.smtp_host = payload.smtp_host.strip() if payload.smtp_host else None
+    if payload.smtp_port is not None:
+        s.smtp_port = payload.smtp_port
+    if payload.smtp_user is not None:
+        s.smtp_user = payload.smtp_user.strip() if payload.smtp_user else None
+    if payload.smtp_password is not None and payload.smtp_password.strip():
+        # Only update password if provided and non-empty
+        s.smtp_password = payload.smtp_password.strip()
+    if payload.smtp_tls is not None:
+        s.smtp_tls = payload.smtp_tls
+    if payload.emails_from_email is not None:
+        s.emails_from_email = payload.emails_from_email.strip() if payload.emails_from_email else None
+    if payload.emails_from_name is not None:
+        s.emails_from_name = payload.emails_from_name.strip() if payload.emails_from_name else None
+    
+    db.commit()
+    db.refresh(s)
+    
+    return EmailSettingsResponse(
+        smtp_host=s.smtp_host,
+        smtp_port=s.smtp_port or 587,
+        smtp_user=s.smtp_user,
+        has_password=bool(s.smtp_password),
+        smtp_tls=s.smtp_tls if s.smtp_tls is not None else True,
+        emails_from_email=s.emails_from_email,
+        emails_from_name=s.emails_from_name or "CIBN Digital Library",
+    )
+
+
+@router.post("/email/test")
+def test_email_settings(payload: EmailTestRequest, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Send a test email to verify SMTP configuration."""
+    from app.services.email import send_test_email
+    
+    success = send_test_email(recipient_email=payload.recipient_email, db=db)
+    
+    if success:
+        return {"ok": True, "message": f"Test email sent successfully to {payload.recipient_email}"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send test email. Please check your SMTP configuration."
+        )

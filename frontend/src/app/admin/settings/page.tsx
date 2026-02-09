@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { BookOpen, FileText, Users, CreditCard, Settings, LogOut, Plus, Package, BarChart3 } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { contentService, type Content, type ContentType, type ContentCategory } from '@/lib/api/content';
+import { contentService, type Content, type ContentCategory, type ContentType } from '@/lib/api/content';
 import { uploadService } from '@/lib/api/upload';
+import { BarChart3, BookOpen, CreditCard, FileText, Mail, Package } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 // Lazy load components
 const LibraryManager = dynamic(
@@ -19,6 +18,11 @@ const LibraryManager = dynamic(
 const PaymentsSection = dynamic(
   () => import('./components/PaymentsSection').then(mod => mod.PaymentsSection),
   { ssr: false, loading: () => <div>Loading payments section...</div> }
+);
+
+const EmailSettingsSection = dynamic(
+  () => import('./components/EmailSettingsSection').then(mod => mod.EmailSettingsSection),
+  { ssr: false, loading: () => <div>Loading email settings...</div> }
 );
 
 const SidebarNav = dynamic(
@@ -84,7 +88,7 @@ interface LibraryFormData {
 const navItems = [
   { id: 'library' as const, label: 'Library', icon: <BookOpen className="w-4 h-4" /> },
   { id: 'payments' as const, label: 'Payments', icon: <CreditCard className="w-4 h-4" /> },
-  { id: 'settings' as const, label: 'Settings', icon: <Settings className="w-4 h-4" /> },
+  { id: 'settings' as const, label: 'Email Setup', icon: <Mail className="w-4 h-4" /> },
 ];
 
 export default function AdminSettingsPage() {
@@ -586,10 +590,7 @@ export default function AdminSettingsPage() {
 
             {activeTab === 'settings' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-medium">General Settings</h2>
-                <div className="bg-white p-6 rounded-lg border">
-                  <p className="text-gray-600">General settings will be available soon.</p>
-                </div>
+                <EmailSettingsSection />
               </div>
             )}
           </div>

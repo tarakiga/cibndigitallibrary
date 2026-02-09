@@ -167,7 +167,7 @@ export function Navbar() {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuContent className="w-56 bg-white" align="end" forceMount>
                     <div className="px-2 py-1.5 text-sm font-medium text-gray-900">
                       {user?.full_name || "User"}
                     </div>

@@ -134,7 +134,7 @@ async def download_purchased_content(
             logger.error(f"Error creating file response: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error preparing file for download: {str(e)}"
+                detail="Error preparing file for download"
             )
         
     except HTTPException as he:
@@ -143,7 +143,6 @@ async def download_purchased_content(
         raise
         
     except Exception as e:
-        # Log unexpected errors and return a 500 response
         logger.error(f"Unexpected error in download endpoint: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

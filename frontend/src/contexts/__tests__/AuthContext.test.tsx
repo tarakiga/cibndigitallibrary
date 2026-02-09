@@ -3,19 +3,6 @@ import { render, screen, act, waitFor } from '@testing-library/react'
 import { AuthProvider, useAuth } from '../AuthContext'
 import { authService } from '@/lib/api/auth'
 
-// Mock the auth service
-jest.mock('@/lib/api/auth', () => ({
-  authService: {
-    getStoredUser: jest.fn(),
-    getAccessToken: jest.fn(),
-    getCurrentUser: jest.fn(),
-    login: jest.fn(),
-    cibnLogin: jest.fn(),
-    register: jest.fn(),
-    logout: jest.fn(),
-  },
-}))
-
 // Mock sonner toast
 jest.mock('sonner', () => ({
   toast: {
@@ -55,6 +42,10 @@ describe('AuthContext', () => {
     localStorageMock.removeItem.mockClear()
   })
 
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
   it('renders without crashing', () => {
     render(
       <AuthProvider>
@@ -65,8 +56,8 @@ describe('AuthContext', () => {
   })
 
   it('provides initial unauthenticated state', async () => {
-    (authService.getStoredUser as jest.Mock).mockReturnValue(null)
-    (authService.getAccessToken as jest.Mock).mockReturnValue(null)
+    jest.spyOn(authService, 'getStoredUser').mockReturnValue(null)
+    jest.spyOn(authService, 'getAccessToken').mockReturnValue(null)
 
     render(
       <AuthProvider>
@@ -84,9 +75,9 @@ describe('AuthContext', () => {
     const mockUser = { id: 1, email: 'test@example.com', role: 'subscriber' }
     const mockToken = 'mock-token'
 
-    (authService.getStoredUser as jest.Mock).mockReturnValue(mockUser)
-    (authService.getAccessToken as jest.Mock).mockReturnValue(mockToken)
-    (authService.getCurrentUser as jest.Mock).mockResolvedValue(mockUser)
+    jest.spyOn(authService, 'getStoredUser').mockReturnValue(mockUser)
+    jest.spyOn(authService, 'getAccessToken').mockReturnValue(mockToken)
+    jest.spyOn(authService, 'getCurrentUser').mockResolvedValue(mockUser)
 
     render(
       <AuthProvider>
@@ -104,10 +95,10 @@ describe('AuthContext', () => {
     const mockUser = { id: 1, email: 'test@example.com', role: 'subscriber' }
     const mockToken = 'expired-token'
 
-    (authService.getStoredUser as jest.Mock).mockReturnValue(mockUser)
-    (authService.getAccessToken as jest.Mock).mockReturnValue(mockToken)
-    (authService.getCurrentUser as jest.Mock).mockRejectedValue(new Error('Token expired'))
-    (authService.logout as jest.Mock).mockImplementation(() => {})
+    jest.spyOn(authService, 'getStoredUser').mockReturnValue(mockUser)
+    jest.spyOn(authService, 'getAccessToken').mockReturnValue(mockToken)
+    jest.spyOn(authService, 'getCurrentUser').mockRejectedValue(new Error('Token expired'))
+    jest.spyOn(authService, 'clearAuthData').mockImplementation(() => {})
 
     render(
       <AuthProvider>
@@ -116,7 +107,7 @@ describe('AuthContext', () => {
     )
 
     await waitFor(() => {
-      expect(authService.logout).toHaveBeenCalled()
+      expect(authService.clearAuthData).toHaveBeenCalled()
       expect(screen.getByTestId('is-authenticated')).toHaveTextContent('false')
     })
   })

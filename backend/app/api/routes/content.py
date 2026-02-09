@@ -5,11 +5,14 @@ from typing import Optional, List
 from app.db.session import get_db
 from app.schemas import ContentCreate, ContentUpdate, ContentResponse, ContentListResponse
 from app.models import Content, ContentType, ContentCategory, User, UserRole, Purchase
-from app.api.dependencies import get_current_user_dependency, get_optional_user_dependency, require_admin
+from app.api.dependencies import get_current_user_dependency, require_admin
 import os
 import shutil
 from pathlib import Path
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/content", tags=["Content"])
 
@@ -24,13 +27,13 @@ def list_content(
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user_dependency)
+    current_user: User = Depends(get_current_user_dependency)
 ):
     """List content with filtering and pagination."""
     query = db.query(Content).filter(Content.is_active == True)
     
     # Filter exclusive content for non-CIBN members
-    if not current_user or current_user.role not in [UserRole.CIBN_MEMBER, UserRole.ADMIN]:
+    if current_user.role not in [UserRole.CIBN_MEMBER, UserRole.ADMIN]:
         query = query.filter(Content.is_exclusive == False)
     
     # Apply filters
@@ -72,7 +75,7 @@ def list_content(
 def get_content(
     content_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user_dependency)
+    current_user: User = Depends(get_current_user_dependency)
 ):
     """Get a single content item by ID."""
     content = db.query(Content).filter(Content.id == content_id).first()
@@ -85,13 +88,11 @@ def get_content(
     
     # Check if user has access to exclusive content
     if content.is_exclusive:
-        if not current_user or current_user.role not in [UserRole.CIBN_MEMBER, UserRole.ADMIN]:
+        if current_user.role not in [UserRole.CIBN_MEMBER, UserRole.ADMIN]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="CIBN membership required to access this content"
             )
-        
-        # Check if CIBN member has outstanding arrears (admins bypass this check)
         if current_user.role == UserRole.CIBN_MEMBER:
             if current_user.arrears and float(current_user.arrears) > 0:
                 raise HTTPException(
@@ -176,9 +177,10 @@ def delete_content(
         raise
     except Exception as e:
         db.rollback()
+        logger.exception("Delete content failed", exc_info=e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete content: {str(e)}"
+            detail="Failed to delete content"
         )
 
 

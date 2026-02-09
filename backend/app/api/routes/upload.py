@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 from typing import Optional
 from app.api.dependencies import require_admin
@@ -8,37 +8,24 @@ import os
 import shutil
 from pathlib import Path
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {
-    'document': {'.pdf', '.doc', '.docx', '.txt', '.md'},
-    'video': {'.mp4', '.webm', '.mov', '.avi', '.mkv'},
-    'audio': {'.mp3', '.wav', '.ogg', '.m4a', '.aac'},
-    'image': {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
-}
-
-# Max file sizes (in bytes) - None means no limit
-MAX_FILE_SIZES = {
-    'document': 50 * 1024 * 1024,  # 50MB
-    'video': None,                  # No limit for large video files
-    'audio': None,                  # No limit for large audio files
-    'image': 10 * 1024 * 1024       # 10MB
-}
-
-
-def get_file_type(filename: str) -> Optional[str]:
+def get_file_type(filename: str, allowed_extensions: dict[str, list[str]]) -> Optional[str]:
     """Determine file type based on extension."""
     ext = Path(filename).suffix.lower()
-    for file_type, extensions in ALLOWED_EXTENSIONS.items():
-        if ext in extensions:
+    for file_type, extensions in allowed_extensions.items():
+        if ext in set(extensions):
             return file_type
     return None
 
 
 @router.post("/file")
 async def upload_file(
+    request: Request,
     file: UploadFile = File(...),
     admin: User = Depends(require_admin)
 ):
@@ -55,12 +42,15 @@ async def upload_file(
                 detail="No filename provided"
             )
         
-        # Get file type
-        file_type = get_file_type(file.filename)
+        allowed_extensions = settings.UPLOAD_ALLOWED_EXTENSIONS
+        max_file_sizes = settings.UPLOAD_MAX_FILE_SIZES
+
+        file_type = get_file_type(file.filename, allowed_extensions)
         if not file_type:
+            all_exts = sorted({ext for exts in allowed_extensions.values() for ext in exts})
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File type not supported. Allowed extensions: {', '.join(sum(ALLOWED_EXTENSIONS.values(), set()))}"
+                detail=f"File type not supported. Allowed extensions: {', '.join(all_exts)}"
             )
         
         # Check file size
@@ -69,7 +59,7 @@ async def upload_file(
         file.file.seek(0)  # Seek back to start
         
         # Get max size (None means no limit)
-        max_size = MAX_FILE_SIZES.get(file_type, 50 * 1024 * 1024)
+        max_size = max_file_sizes.get(file_type, 50 * 1024 * 1024)
         if max_size is not None and file_size > max_size:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -89,8 +79,8 @@ async def upload_file(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Generate URL
-        file_url = f"http://localhost:8000/uploads/{unique_filename}"
+        base_url = (settings.UPLOAD_BASE_URL or str(request.base_url)).rstrip("/")
+        file_url = f"{base_url}/uploads/{unique_filename}"
         
         return {
             "success": True,
@@ -105,9 +95,10 @@ async def upload_file(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Upload failed", exc_info=e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload file: {str(e)}"
+            detail="Failed to upload file"
         )
 
 
@@ -140,7 +131,8 @@ async def delete_file(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Delete upload failed", exc_info=e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete file: {str(e)}"
+            detail="Failed to delete file"
         )

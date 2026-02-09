@@ -18,6 +18,7 @@ describe('ShoppingCart', () => {
   const defaultCartState = {
     cartItems: [],
     isLoading: false,
+    isInitialized: true,
     totalPrice: 0,
     vat: 0,
     grandTotal: 0,

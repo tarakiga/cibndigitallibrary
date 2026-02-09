@@ -18,6 +18,7 @@ export interface Content {
   is_exclusive: boolean
   is_active: boolean
   file_url?: string
+  file_size?: number
   thumbnail_url?: string
   stock_quantity?: number
   duration?: number  // in seconds, for video/audio

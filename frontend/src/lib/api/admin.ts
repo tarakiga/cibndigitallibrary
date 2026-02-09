@@ -1,5 +1,5 @@
-import apiClient from './client';
 import axios from 'axios';
+import apiClient from './client';
 
 // Types
 export interface PaymentSettingsResponse {
@@ -16,6 +16,26 @@ export interface PaymentSettingsUpdate {
   test_secret_key?: string;
   live_public_key?: string;
   live_secret_key?: string;
+}
+
+export interface EmailSettingsResponse {
+  smtp_host: string | null;
+  smtp_port: number;
+  smtp_user: string | null;
+  has_password: boolean;
+  smtp_tls: boolean;
+  emails_from_email: string | null;
+  emails_from_name: string;
+}
+
+export interface EmailSettingsUpdate {
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  smtp_user?: string | null;
+  smtp_password?: string | null;
+  smtp_tls?: boolean | null;
+  emails_from_email?: string | null;
+  emails_from_name?: string | null;
 }
 
 export interface LibraryItem {
@@ -70,6 +90,25 @@ export const adminSettingsApi = {
     const res = await apiClient.post<{ ok: boolean; message?: string; reference?: string }>(
       '/admin/settings/payments/test',
       {}
+    );
+    return res.data;
+  },
+
+  // Email Settings
+  async getEmailSettings(): Promise<EmailSettingsResponse> {
+    const res = await apiClient.get<EmailSettingsResponse>('/admin/settings/email');
+    return res.data;
+  },
+
+  async updateEmailSettings(payload: EmailSettingsUpdate): Promise<EmailSettingsResponse> {
+    const res = await apiClient.put<EmailSettingsResponse>('/admin/settings/email', payload);
+    return res.data;
+  },
+
+  async testEmailSettings(recipientEmail: string): Promise<{ ok: boolean; message: string }> {
+    const res = await apiClient.post<{ ok: boolean; message: string }>(
+      '/admin/settings/email/test',
+      { recipient_email: recipientEmail }
     );
     return res.data;
   },

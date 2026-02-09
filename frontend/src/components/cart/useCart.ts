@@ -13,40 +13,42 @@ export interface CartItem {
   isRestricted: boolean;
 }
 
+const getStoredCartItems = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('cart_items');
+    if (!raw) return [];
+    const items = JSON.parse(raw);
+    return items.map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      type: item.type || 'document',
+      price: item.price || 0,
+      quantity: item.qty || item.quantity || 1,
+      instructor: item.instructor || '',
+      duration: item.duration || '',
+      image: item.image || '',
+      isPremium: item.isPremium || false,
+      isRestricted: item.isRestricted || false,
+    }));
+  } catch (error) {
+    console.error('Error loading cart items:', error);
+    return [];
+  }
+};
+
 export const useCart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => getStoredCartItems());
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(true);
 
   // Load cart items from localStorage
   const loadCartItems = useCallback(() => {
-    try {
-      const raw = localStorage.getItem('cart_items');
-      if (raw) {
-        const items = JSON.parse(raw);
-        const mapped: CartItem[] = items.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          type: item.type || 'document',
-          price: item.price || 0,
-          quantity: item.qty || item.quantity || 1,
-          instructor: item.instructor || '',
-          duration: item.duration || '',
-          image: item.image || '',
-          isPremium: item.isPremium || false,
-          isRestricted: item.isRestricted || false,
-        }));
-        setCartItems(mapped);
-      } else {
-        setCartItems([]);
-      }
-    } catch (error) {
-      console.error('Error loading cart items:', error);
-      setCartItems([]);
-    } finally {
-      setIsLoading(false);
-      setIsInitialized(true);
-    }
+    setIsLoading(true);
+    const items = getStoredCartItems();
+    setCartItems(items);
+    setIsLoading(false);
+    setIsInitialized(true);
   }, []);
 
   // Auto-load cart on mount

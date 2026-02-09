@@ -82,6 +82,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:logout', handleLogout)
   }, [])
 
+  const getErrorMessage = (error: any, fallback: string) => {
+    const detail =
+      error?.response?.data?.detail ??
+      error?.data?.detail ??
+      error?.response?.data?.message ??
+      error?.data?.message
+
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) {
+      const parts = detail
+        .map((item) => {
+          if (typeof item === 'string') return item
+          if (item?.msg) {
+            const loc = Array.isArray(item.loc) ? item.loc.join('.') : item.loc
+            return loc ? `${loc}: ${item.msg}` : item.msg
+          }
+          return null
+        })
+        .filter(Boolean)
+      if (parts.length) return parts.join(' ')
+    }
+    if (detail && typeof detail === 'object') {
+      const msg = (detail as any).msg
+      const loc = (detail as any).loc
+      if (typeof msg === 'string') {
+        const locText = Array.isArray(loc) ? loc.join('.') : loc
+        return locText ? `${locText}: ${msg}` : msg
+      }
+    }
+    if (typeof error?.message === 'string') return error.message
+    if (typeof error?.data?.message === 'string') return error.data.message
+    return fallback
+  }
+
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await authService.login(credentials)
@@ -91,7 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success('Login successful!')
     } catch (error: any) {
       console.error('Login error:', error)
-      const errorMessage = error.response?.data?.detail || error.message || 'Login failed. Please check your credentials.'
+      const errorMessage = getErrorMessage(
+        error,
+        'Login failed. Please check your credentials.'
+      )
       setLastError(errorMessage)
       toast.error(errorMessage)
       throw error
@@ -105,7 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLastError(null)
       toast.success('Welcome, CIBN Member!')
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Login failed. Please check your credentials.'
+      const errorMessage = getErrorMessage(
+        error,
+        'Login failed. Please check your credentials.'
+      )
       setLastError(errorMessage)
       toast.error(errorMessage)
       throw error
@@ -117,7 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.register(data)
       toast.success('Registration successful! Please login.')
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Registration failed. Please try again.'
+      const errorMessage = getErrorMessage(
+        error,
+        'Registration failed. Please try again.'
+      )
       toast.error(errorMessage)
       throw error
     }

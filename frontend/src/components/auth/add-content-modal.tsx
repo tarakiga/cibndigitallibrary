@@ -21,15 +21,20 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { File as FileIcon, UploadCloud, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { uploadService } from "@/lib/api/upload";
+import { contentService } from "@/lib/api/content";
+import {
+  CONTENT_CATEGORY_OPTIONS,
+  CONTENT_TYPE_OPTIONS,
+  CONTENT_UPLOAD_RETRY,
+} from "@/lib/config/content";
 
 interface AddContentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContentAdded: () => void; // Callback to refresh content list
 }
-
-type ContentType = "document" | "video" | "audio" | "physical";
 
 export function AddContentModal({
   isOpen,
@@ -39,13 +44,18 @@ export function AddContentModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [contentType, setContentType] = useState<ContentType | "">("");
+  const [contentType, setContentType] = useState("");
   const [category, setCategory] = useState("");
   const [isExclusive, setIsExclusive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const requiresFile = useMemo(
+    () => Boolean(contentType && contentType !== "physical"),
+    [contentType]
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -63,32 +73,59 @@ export function AddContentModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Basic validation
     if (!title || !contentType || !category) {
       setError("Title, Content Type, and Category are required.");
+      return;
+    }
+    if (requiresFile && !file) {
+      setError("Please upload a file for this content type.");
+      return;
+    }
+    const parsedPrice = price ? Number(price) : 0;
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      setError("Please enter a valid price.");
       return;
     }
     setError("");
     setSubmitting(true);
 
     try {
-      // TODO: Implement the actual API call to upload content
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("price", price);
-      formData.append("content_type", contentType);
-      formData.append("category", category);
-      formData.append("is_exclusive", String(isExclusive));
+      let uploadedFileUrl: string | undefined;
+      let uploadedFileSize: number | undefined;
+
       if (file) {
-        formData.append("file", file);
+        let attempt = 0;
+        while (attempt <= CONTENT_UPLOAD_RETRY.retries) {
+          try {
+            const uploadResponse = await uploadService.uploadFile(file);
+            uploadedFileUrl = uploadResponse.file_url;
+            uploadedFileSize = uploadResponse.file_size;
+            break;
+          } catch (uploadError) {
+            if (attempt >= CONTENT_UPLOAD_RETRY.retries) {
+              throw uploadError;
+            }
+            const delay = Math.min(
+              CONTENT_UPLOAD_RETRY.maxDelayMs,
+              CONTENT_UPLOAD_RETRY.baseDelayMs * 2 ** attempt
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            attempt += 1;
+          }
+        }
       }
 
-      console.log(
-        "Submitting form data:",
-        Object.fromEntries(formData.entries())
-      );
-      // await adminContentService.create(formData);
+      await contentService.createContent({
+        title,
+        description,
+        price: parsedPrice,
+        content_type: contentType as any,
+        category: category as any,
+        is_exclusive: isExclusive,
+        is_active: true,
+        file_url: uploadedFileUrl,
+        file_size: uploadedFileSize,
+      });
 
       onContentAdded(); // Refresh the list
       onClose(); // Close modal on success
@@ -121,17 +158,18 @@ export function AddContentModal({
               <div className="space-y-2">
                 <Label htmlFor="content-type">Content Type</Label>
                 <Select
-                  onValueChange={(value: ContentType) => setContentType(value)}
+                  onValueChange={setContentType}
                   value={contentType}
                 >
                   <SelectTrigger id="content-type">
                     <SelectValue placeholder="Select a type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="document">Document</SelectItem>
-                    <SelectItem value="video">Video</SelectItem>
-                    <SelectItem value="audio">Audio</SelectItem>
-                    <SelectItem value="physical">Physical Item</SelectItem>
+                    {CONTENT_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -142,16 +180,11 @@ export function AddContentModal({
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="exam_text">Exam Text</SelectItem>
-                    <SelectItem value="cibn_publication">
-                      CIBN Publication
-                    </SelectItem>
-                    <SelectItem value="research_paper">
-                      Research Paper
-                    </SelectItem>
-                    <SelectItem value="stationery">Stationery</SelectItem>
-                    <SelectItem value="souvenir">Souvenir</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {CONTENT_CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -202,7 +235,7 @@ export function AddContentModal({
               </div>
             </div>
 
-            {contentType && contentType !== "physical" && (
+            {requiresFile && (
               <div className="space-y-2">
                 <Label>Content File</Label>
                 <div

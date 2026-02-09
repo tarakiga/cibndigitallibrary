@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json .npmrc ./
 
 # Install dependencies using clean install for production
-RUN npm ci
+RUN npm install
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder

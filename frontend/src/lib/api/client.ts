@@ -14,6 +14,16 @@ const isDev = process.env.NODE_ENV === "development";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 
+const navigateTo = (url: string) => {
+  if (typeof window === "undefined") return;
+  if (process.env.NODE_ENV === "test") return;
+  if (typeof window.location?.assign === "function") {
+    window.location.assign(url);
+  } else {
+    window.location.href = url;
+  }
+};
+
 // Type guards
 type ErrorWithMessage = { message: string };
 
@@ -124,7 +134,7 @@ apiClient.interceptors.response.use(
             const returnUrl = encodeURIComponent(
               window.location.pathname + window.location.search
             );
-            window.location.href = `/login?returnUrl=${returnUrl}`;
+            navigateTo(`/login?returnUrl=${returnUrl}`);
           }
           return Promise.reject(error);
         }
@@ -162,7 +172,7 @@ apiClient.interceptors.response.use(
 
           if (!window.location.pathname.startsWith("/login")) {
             window.dispatchEvent(new Event("auth:logout"));
-            window.location.href = "/login";
+            navigateTo("/login");
           }
           return Promise.reject(refreshError);
         }

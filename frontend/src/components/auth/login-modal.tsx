@@ -12,6 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMemo, useState } from "react";
 import { 
@@ -19,6 +26,41 @@ import {
   Shield, Crown, Sparkles 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CIBN_DEPARTMENT_OPTIONS } from "@/lib/config/auth";
+
+const getErrorMessage = (error: any, fallback: string) => {
+  const detail =
+    error?.response?.data?.detail ??
+    error?.data?.detail ??
+    error?.response?.data?.message ??
+    error?.data?.message;
+
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item?.msg) {
+          const loc = Array.isArray(item.loc) ? item.loc.join(".") : item.loc;
+          return loc ? `${loc}: ${item.msg}` : item.msg;
+        }
+        return null;
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join(" ");
+  }
+  if (detail && typeof detail === "object") {
+    const msg = (detail as any).msg;
+    const loc = (detail as any).loc;
+    if (typeof msg === "string") {
+      const locText = Array.isArray(loc) ? loc.join(".") : loc;
+      return locText ? `${locText}: ${msg}` : msg;
+    }
+  }
+  if (typeof error?.message === "string") return error.message;
+  if (typeof error?.data?.message === "string") return error.data.message;
+  return fallback;
+};
 
 function useSafeAuth() {
   try {
@@ -61,6 +103,7 @@ export function LoginModal({
 
   // CIBN tab state
   const [empId, setEmpId] = useState("");
+  const [department, setDepartment] = useState("");
   const [cibnPassword, setCibnPassword] = useState("");
   const [showCibnPassword, setShowCibnPassword] = useState(false);
 
@@ -72,8 +115,8 @@ export function LoginModal({
     [email, password]
   );
   const canSubmitCibn = useMemo(
-    () => Boolean(empId.trim() && cibnPassword.trim()),
-    [empId, cibnPassword]
+    () => Boolean(empId.trim() && department.trim() && cibnPassword.trim()),
+    [empId, department, cibnPassword]
   );
 
   const onOpenChange = (open: boolean) => {
@@ -95,9 +138,10 @@ export function LoginModal({
       }
     } catch (e: any) {
       console.error("User login error:", e);
-      const msg =
-        e?.response?.data?.detail ||
-        "Login failed. Please check your credentials.";
+      const msg = getErrorMessage(
+        e,
+        "Login failed. Please check your credentials."
+      );
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -119,9 +163,10 @@ export function LoginModal({
       }
     } catch (e: any) {
       console.error("CIBN login error:", e);
-      const msg =
-        e?.response?.data?.detail ||
-        "Login failed. Please check your credentials.";
+      const msg = getErrorMessage(
+        e,
+        "Login failed. Please check your credentials."
+      );
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -344,6 +389,27 @@ export function LoginModal({
                     placeholder="Enter your CIBN Employee ID"
                     className="h-11 border-gray-300 focus:border-[#FFD700] focus:ring-[#FFD700]"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cibn-department" className="text-gray-700 font-medium">
+                    Department
+                  </Label>
+                  <Select value={department} onValueChange={setDepartment}>
+                    <SelectTrigger
+                      id="cibn-department"
+                      className="h-11 border-gray-300 focus:border-[#FFD700] focus:ring-[#FFD700]"
+                    >
+                      <SelectValue placeholder="Select your department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CIBN_DEPARTMENT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

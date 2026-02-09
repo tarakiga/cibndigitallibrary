@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { CreditCard, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { AlertCircle, Check, CreditCard, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface PaymentSettings {
   active_mode: 'test' | 'live';
@@ -87,8 +87,8 @@ export function PaymentsSection({
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Test Mode</span>
+          <div className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200">
+            <span className="text-sm font-medium text-gray-700">Test Mode</span>
             <Switch
               id="payment-mode"
               checked={paymentSettings.active_mode === 'live'}
@@ -96,10 +96,11 @@ export function PaymentsSection({
                 handleModeChange(checked ? 'live' : 'test')
               }
               disabled={saving}
+              className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-blue-500 [&>span]:bg-white [&>span]:shadow-md"
             />
-            <span className="text-sm font-medium">Live Mode</span>
+            <span className="text-sm font-medium text-gray-700">Live Mode</span>
           </div>
-          <Button onClick={onSave} disabled={saving}>
+          <Button onClick={onSave} disabled={saving} className="border border-black">
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -130,9 +131,19 @@ export function PaymentsSection({
       </Alert>
 
       <Tabs defaultValue="test" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="test">Test Credentials</TabsTrigger>
-          <TabsTrigger value="live">Live Credentials</TabsTrigger>
+        <TabsList className="bg-gray-100 border border-gray-200 p-1">
+          <TabsTrigger 
+            value="test" 
+            className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 px-4 py-2"
+          >
+            Test Credentials
+          </TabsTrigger>
+          <TabsTrigger 
+            value="live" 
+            className="data-[state=active]:bg-white data-[state=active]:text-amber-700 data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 px-4 py-2"
+          >
+            Live Credentials
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="test" className="space-y-4">

@@ -26,13 +26,17 @@ class PaystackService:
         secret_key_override: str | None = None,
     ) -> Dict[str, Any]:
         """Initialize a payment transaction."""
-        # Short-circuit during tests to avoid external calls
         if os.getenv("TESTING") == "true":
-            return {
-                "authorization_url": f"https://paystack.test/authorize/{reference}",
-                "access_code": "TEST_ACCESS_CODE",
-                "reference": reference,
-            }
+            if os.getenv("PAYSTACK_TEST_MODE") == "success":
+                return {
+                    "authorization_url": f"https://paystack.test/authorize/{reference}",
+                    "access_code": "TEST_ACCESS_CODE",
+                    "reference": reference,
+                }
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Payment service unavailable",
+            )
         # Paystack expects amount in kobo (NGN * 100)
         amount_kobo = int(amount * 100)
         
@@ -91,13 +95,17 @@ class PaystackService:
     
     async def verify_transaction(self, reference: str) -> Dict[str, Any]:
         """Verify a payment transaction."""
-        # Short-circuit during tests to avoid external calls
         if os.getenv("TESTING") == "true":
-            return {
-                "status": "success",
-                "reference": reference,
-                "channel": "test",
-            }
+            if os.getenv("PAYSTACK_TEST_MODE") == "success":
+                return {
+                    "status": "success",
+                    "reference": reference,
+                    "channel": "test",
+                }
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Payment service unavailable",
+            )
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(

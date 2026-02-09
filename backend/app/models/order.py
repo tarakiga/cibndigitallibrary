@@ -31,6 +31,7 @@ class Order(Base):
     # Relationships
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    purchases = relationship("Purchase", back_populates="order")
 
 
 class OrderItem(Base):
@@ -53,6 +54,9 @@ class Purchase(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content_id = Column(Integer, ForeignKey("contents.id"), nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    amount = Column(Float, nullable=True)
+    quantity = Column(Integer, default=1)
     purchase_date = Column(DateTime(timezone=True), server_default=func.now())
     access_count = Column(Integer, default=0)
     last_accessed = Column(DateTime(timezone=True), nullable=True)
@@ -60,3 +64,4 @@ class Purchase(Base):
     # Relationships
     user = relationship("User", back_populates="purchases")
     content = relationship("Content", back_populates="purchases")
+    order = relationship("Order", back_populates="purchases")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 
 
@@ -17,3 +17,34 @@ class PaymentSettingsUpdate(BaseModel):
     test_secret_key: Optional[str] = None
     live_public_key: Optional[str] = None
     live_secret_key: Optional[str] = None
+
+
+# Email Settings Schemas
+class EmailSettingsResponse(BaseModel):
+    """Response schema for email settings (password masked)."""
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = 587
+    smtp_user: Optional[str] = None
+    has_password: bool = False  # Never expose actual password
+    smtp_tls: Optional[bool] = True
+    emails_from_email: Optional[str] = None
+    emails_from_name: Optional[str] = "CIBN Digital Library"
+    
+    class Config:
+        from_attributes = True
+
+
+class EmailSettingsUpdate(BaseModel):
+    """Update schema for email settings."""
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = None
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None  # Only set if user provides new password
+    smtp_tls: Optional[bool] = None
+    emails_from_email: Optional[str] = None
+    emails_from_name: Optional[str] = None
+
+
+class EmailTestRequest(BaseModel):
+    """Request schema for sending a test email."""
+    recipient_email: EmailStr

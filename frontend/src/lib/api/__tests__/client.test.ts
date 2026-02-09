@@ -20,12 +20,8 @@ Object.defineProperty(window, 'dispatchEvent', {
 })
 
 describe('API Client', () => {
-  beforeAll(() => {
-    mockedAxios = require('axios')
-    require('../client')
-  })
-
   beforeEach(() => {
+    jest.resetModules()
     jest.clearAllMocks()
     localStorageMock.getItem.mockClear()
     localStorageMock.setItem.mockClear()
@@ -33,22 +29,60 @@ describe('API Client', () => {
     mockDispatchEvent.mockClear()
   })
 
-it('creates axios instance with correct configuration', () => {
-    // Module is required in beforeEach to trigger axios.create
-    expect(mockedAxios.create).toHaveBeenCalledWith({
-      baseURL: 'http://localhost:8000/api/v1',
-      timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  const buildAxiosInstance = () => ({
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() },
+    },
+    defaults: {},
+  })
+
+  const loadClient = (env: Record<string, string | undefined>) => {
+    mockedAxios = require('axios')
+    mockedAxios.isAxiosError = jest.fn((value: any) => !!(value && typeof value === 'object' && 'response' in value))
+    mockedAxios.create.mockImplementation(() => buildAxiosInstance())
+    const originalEnv = { ...process.env }
+    Object.entries(env).forEach(([key, value]) => {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
     })
+    jest.isolateModules(() => {
+      require('../client')
+    })
+    process.env = originalEnv
+  }
+
+  it('creates axios instance with correct configuration', () => {
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/api/v1',
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
+    expect(mockedAxios.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: 'http://localhost:8000/api/v1',
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true,
+      })
+    )
   })
 
   it('adds authorization header when token exists', () => {
     const mockToken = 'test-token'
     localStorageMock.getItem.mockReturnValue(mockToken)
 
-    // Mock the request interceptor
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/api/v1',
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
+
     const requestInterceptor = mockedAxios.create.mock.results[0].value.interceptors.request.use.mock.calls[0][0]
     
     const config = {
@@ -65,7 +99,12 @@ it('creates axios instance with correct configuration', () => {
   it('does not add authorization header when no token', () => {
     localStorageMock.getItem.mockReturnValue(null)
 
-    // Mock the request interceptor
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/api/v1',
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
+
     const requestInterceptor = mockedAxios.create.mock.results[0].value.interceptors.request.use.mock.calls[0][0]
     
     const config = {
@@ -79,86 +118,95 @@ it('creates axios instance with correct configuration', () => {
     expect(result.headers.Authorization).toBeUndefined()
   })
 
-  it('handles 401 unauthorized response', () => {
-    // Mock the response interceptor
+  it('handles 401 unauthorized response', async () => {
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/api/v1',
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
+
     const responseInterceptor = mockedAxios.create.mock.results[0].value.interceptors.response.use.mock.calls[0][1]
     
     const error = {
       response: {
         status: 401,
       },
+      config: { _retry: true },
     }
 
-    responseInterceptor(error)
+    await responseInterceptor(error).catch(() => undefined)
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('access_token')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('user')
     expect(mockDispatchEvent).toHaveBeenCalledWith(new Event('auth:logout'))
   })
 
-  it('does not handle non-401 errors', () => {
-    // Mock the response interceptor
+  it('does not handle non-401 errors', async () => {
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/api/v1',
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
+
     const responseInterceptor = mockedAxios.create.mock.results[0].value.interceptors.response.use.mock.calls[0][1]
     
     const error = {
       response: {
         status: 500,
       },
+      config: {},
     }
 
-    responseInterceptor(error)
+    await responseInterceptor(error).catch(() => undefined)
 
     expect(localStorageMock.removeItem).not.toHaveBeenCalled()
     expect(mockDispatchEvent).not.toHaveBeenCalled()
   })
 
-  it('handles errors without response', () => {
-    // Mock the response interceptor
+  it('handles errors without response', async () => {
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: 'http://localhost:8000/api/v1',
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
+
     const responseInterceptor = mockedAxios.create.mock.results[0].value.interceptors.response.use.mock.calls[0][1]
     
     const error = {
       message: 'Network error',
     }
 
-    responseInterceptor(error)
+    await responseInterceptor(error).catch(() => undefined)
 
     expect(localStorageMock.removeItem).not.toHaveBeenCalled()
     expect(mockDispatchEvent).not.toHaveBeenCalled()
   })
 
   it('uses environment variable for API base URL', () => {
-    const originalEnv = process.env.NEXT_PUBLIC_API_BASE_URL
-    process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api.example.com/v1'
-
-    // Re-import to get the new environment variable
-    jest.resetModules()
-    require('../client')
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: undefined,
+      NEXT_PUBLIC_API_BASE_URL: 'https://api.example.com/v1',
+    })
 
     expect(mockedAxios.create).toHaveBeenCalledWith(
       expect.objectContaining({
         baseURL: 'https://api.example.com/v1',
       })
     )
-
-    // Restore original environment
-    process.env.NEXT_PUBLIC_API_BASE_URL = originalEnv
   })
 
   it('falls back to default API URL when environment variable is not set', () => {
-    const originalEnv = process.env.NEXT_PUBLIC_API_BASE_URL
-    delete process.env.NEXT_PUBLIC_API_BASE_URL
-
-    // Re-import to get the default URL
-    jest.resetModules()
-    require('../client')
+    loadClient({
+      NODE_ENV: 'development',
+      NEXT_PUBLIC_API_URL: undefined,
+      NEXT_PUBLIC_API_BASE_URL: undefined,
+    })
 
     expect(mockedAxios.create).toHaveBeenCalledWith(
       expect.objectContaining({
         baseURL: 'http://localhost:8000/api/v1',
       })
     )
-
-    // Restore original environment
-    process.env.NEXT_PUBLIC_API_BASE_URL = originalEnv
   })
 })

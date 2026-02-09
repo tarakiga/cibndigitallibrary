@@ -13,10 +13,57 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cibn_user"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cibn_user}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - cibn_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cibn_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to connect to the postgres service within the docker network
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-cibn_user}:${POSTGRES_PASSWORD:-cibn_password}@postgres:5432/${POSTGRES_DB:-cibn_library}
+      # Ensure frontend URL matches the exported port
+      - FRONTEND_URL=http://localhost:3007
+      # Ensure upload dir is consistent
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cibn_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Point to the local backend exposed on host
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    container_name: cibn_frontend
+    ports:
+      - "3007:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - cibn_network
 
 volumes:
   postgres_data:
+
+networks:
+  cibn_network:
+    driver: bridge

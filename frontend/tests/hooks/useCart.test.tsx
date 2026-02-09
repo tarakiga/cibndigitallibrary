@@ -1,5 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
-import useCart from '@/components/cart/useCart';
+
+jest.unmock('@/components/cart/useCart')
+const useCart = require('@/components/cart/useCart').default;
 
 // Mock localStorage
 const localStorageMock = (() => {
