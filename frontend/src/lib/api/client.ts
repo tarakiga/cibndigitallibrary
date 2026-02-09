@@ -105,9 +105,6 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: unknown) => {
-    // If not in development, just reject with the error
-    if (!isDev) return Promise.reject(error);
-
     // Handle Axios errors
     if (axios.isAxiosError(error)) {
       const { response, config } = error;

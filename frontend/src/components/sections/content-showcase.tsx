@@ -6,39 +6,48 @@ import { Button } from '@/components/ui/button'
 import { BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { ContentCard } from '@/components/content/ContentCard'
+import { useAuth } from '@/contexts/AuthContext'
+import { getErrorMessage, isNetworkError } from '@/utils/error'
 
 export function ContentShowcase() {
   const [content, setContent] = useState<Content[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [requiresAuth, setRequiresAuth] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      setRequiresAuth(true)
+      return
+    }
     fetchContent()
-  }, [])
+  }, [isAuthenticated])
 
   const fetchContent = async () => {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await contentService.getContent({
+      const response = await (isAuthenticated ? contentService.getContent : contentService.getPublicContent)({
         page: 1,
         page_size: 6, // Show 6 items on homepage
       })
       setContent(response.items)
     } catch (err: any) {
-      // Silently handle connection errors
-      const isConnectionError = !err.response || err.code === 'ERR_NETWORK'
-      const errorMessage = err.response?.data?.detail || (isConnectionError ? 'Unable to connect to server' : 'Failed to load content')
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Content fetch error:', errorMessage)
+      const status = err?.status ?? err?.response?.status
+      const isConnectionError = isNetworkError(err)
+      if (status === 403) {
+        setRequiresAuth(true)
+        setError(null)
+      } else {
+        const errorMessage = getErrorMessage(err, isConnectionError ? 'Unable to connect to server' : 'Failed to load content')
+        setError(errorMessage)
+        if (!isConnectionError) {
+          toast.error(errorMessage)
+        }
       }
       
-      setError(errorMessage)
-      // Don't show toast on initial load if backend is down
-      if (!isConnectionError) {
-        toast.error(errorMessage)
-      }
     } finally {
       setIsLoading(false)
     }
@@ -46,6 +55,12 @@ export function ContentShowcase() {
 
   const handleAddToCart = (item: Content) => {
     try {
+      if (!isAuthenticated) {
+        toast.info('Sign in to add items to cart')
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+        window.location.href = `/login?returnUrl=${returnUrl}`
+        return
+      }
       const cart = JSON.parse(localStorage.getItem('cart_items') || '[]')
       const existingItem = cart.find((c: any) => c.id === item.id)
       

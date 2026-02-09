@@ -71,6 +71,19 @@ export const contentService = {
     const response = await apiClient.get<ContentListResponse>(`/content?${params.toString()}`)
     return response.data
   },
+  
+  async getPublicContent(filters?: ContentFilters): Promise<ContentListResponse> {
+    const params = new URLSearchParams()
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.page_size) params.append('page_size', filters.page_size.toString())
+    if (filters?.content_type) params.append('content_type', filters.content_type)
+    if (filters?.category) params.append('category', filters.category)
+    if (filters?.search) params.append('search', filters.search)
+    if (filters?.min_price !== undefined) params.append('min_price', filters.min_price.toString())
+    if (filters?.max_price !== undefined) params.append('max_price', filters.max_price.toString())
+    const response = await apiClient.get<ContentListResponse>(`/content/public?${params.toString()}`)
+    return response.data
+  },
 
   /**
    * Get single content item by ID

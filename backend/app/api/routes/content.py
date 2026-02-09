@@ -16,6 +16,44 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/content", tags=["Content"])
 
+@router.get("/public", response_model=ContentListResponse)
+def list_public_content(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    content_type: Optional[ContentType] = None,
+    category: Optional[ContentCategory] = None,
+    search: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Content).filter(Content.is_active == True, Content.is_exclusive == False)
+    if content_type:
+        query = query.filter(Content.content_type == content_type)
+    if category:
+        query = query.filter(Content.category == category)
+    if search:
+        query = query.filter(Content.title.ilike(f"%{search}%"))
+    if min_price is not None:
+        query = query.filter(Content.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Content.price <= max_price)
+    total = query.count()
+    offset = (page - 1) * page_size
+    items = query.offset(offset).limit(page_size).all()
+    items_with_counts = []
+    for item in items:
+        item_dict = ContentResponse.from_orm(item).dict()
+        purchase_count = db.query(func.count(Purchase.id)).filter(Purchase.content_id == item.id).scalar()
+        item_dict["purchase_count"] = purchase_count or 0
+        items_with_counts.append(ContentResponse(**item_dict))
+    return ContentListResponse(
+        items=items_with_counts,
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
 
 @router.get("", response_model=ContentListResponse)
 def list_content(
