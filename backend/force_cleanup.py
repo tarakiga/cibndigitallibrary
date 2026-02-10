@@ -6,7 +6,7 @@ from sqlalchemy import text
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.db.session import SessionLocal
-from app.models import Content, Purchase, Order, ContentProgress
+from app.models import Content, Purchase, Order, ContentProgress, OrderItem
 
 def force_delete_all_content():
     db = SessionLocal()
@@ -20,13 +20,16 @@ def force_delete_all_content():
         # 2. Delete Purchases
         deleted_purchases = db.query(Purchase).delete()
         print(f"Deleted {deleted_purchases} Purchase records")
+
+        # 3. Delete OrderItems
+        deleted_order_items = db.query(OrderItem).delete()
+        print(f"Deleted {deleted_order_items} OrderItem records")
         
-        # 3. Delete Orders (since they are linked to purchases/content in this context)
-        # Note: In a real app, you might want to be more selective, but user asked to clear test data.
+        # 4. Delete Orders
         deleted_orders = db.query(Order).delete()
         print(f"Deleted {deleted_orders} Order records")
 
-        # 4. Delete Content
+        # 5. Delete Content
         deleted_content = db.query(Content).delete()
         print(f"Deleted {deleted_content} Content records")
         
