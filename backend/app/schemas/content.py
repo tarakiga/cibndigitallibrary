@@ -43,7 +43,7 @@ class ContentResponse(ContentBase):
     file_size: Optional[int]
     duration: Optional[int]
     is_active: bool
-    stock_quantity: Optional[int]
+    stock_quantity: Optional[int] = None
     purchase_count: Optional[int] = 0
     publication_date: Optional[datetime]
     created_at: datetime

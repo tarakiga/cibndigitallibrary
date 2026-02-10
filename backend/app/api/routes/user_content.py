@@ -26,23 +26,37 @@ async def get_purchased_content(
     """
     Get all content purchased by the current user.
     """
-    # Get all purchases for the current user
-    purchases = db.query(Purchase).filter(
-        Purchase.user_id == current_user.id
-    ).all()
-    
-    # Extract content IDs from purchases
-    content_ids = [purchase.content_id for purchase in purchases]
-    
-    if not content_ids:
-        return []
-    
-    # Get all content that the user has purchased
-    content_items = db.query(Content).filter(
-        Content.id.in_(content_ids)
-    ).all()
-    
-    return content_items
+    try:
+        # Get all purchases for the current user
+        purchases = db.query(Purchase).filter(
+            Purchase.user_id == current_user.id
+        ).all()
+        
+        # Extract content IDs from purchases
+        content_ids = [purchase.content_id for purchase in purchases]
+        
+        if not content_ids:
+            return []
+        
+        # Get all content that the user has purchased
+        content_items = db.query(Content).filter(
+            Content.id.in_(content_ids)
+        ).all()
+        
+        # Patch missing attributes for Pydantic validation
+        for item in content_items:
+            # purchase_count is not on the Content model but required by schema (as optional)
+            # We set it to 0 as it's not relevant for this view or available on the model
+            if not hasattr(item, 'purchase_count'):
+                setattr(item, 'purchase_count', 0)
+        
+        return content_items
+    except Exception as e:
+        logger.error(f"Error fetching purchased content for user {current_user.id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while fetching purchased content"
+        )
 
 @router.get("/{content_id}/download")
 async def download_purchased_content(
