@@ -212,7 +212,7 @@ export default function AdminSettingsPage() {
         await fetchLibraryItems();
       } catch (error: any) {
         console.error('Bulk delete error:', error);
-        toast.error(error?.message || 'Failed to delete some items');
+        toast.error(error?.response?.data?.detail || error?.message || 'Failed to delete some items');
       }
     }
   };
@@ -280,9 +280,9 @@ export default function AdminSettingsPage() {
         await contentService.deleteContent(id);
         toast.success('Content deleted successfully');
         await fetchLibraryItems();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete content:', error);
-        toast.error('Failed to delete content');
+        toast.error(error?.response?.data?.detail || 'Failed to delete content');
       }
     }
   };
