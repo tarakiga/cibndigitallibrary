@@ -290,16 +290,17 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Handle deactivate content
-  const handleDeactivateContent = async (item: any) => {
-    if (confirm(`Are you sure you want to deactivate "${item.title}"?`)) {
+  // Handle toggle active status
+  const handleToggleActiveStatus = async (item: any) => {
+    const action = item.isActive ? 'deactivate' : 'activate';
+    if (confirm(`Are you sure you want to ${action} "${item.title}"?`)) {
       try {
-        await contentService.updateContent(parseInt(item.id), { is_active: false });
-        toast.success('Content deactivated successfully');
+        await contentService.updateContent(parseInt(item.id), { is_active: !item.isActive });
+        toast.success(`Content ${action}d successfully`);
         await fetchLibraryItems();
       } catch (error: any) {
-        console.error('Failed to deactivate content:', error);
-        toast.error(error?.response?.data?.detail || 'Failed to deactivate content');
+        console.error(`Failed to ${action} content:`, error);
+        toast.error(error?.response?.data?.detail || `Failed to ${action} content`);
       }
     }
   };
@@ -594,7 +595,7 @@ export default function AdminSettingsPage() {
                           setIsEditing(true);
                         }}
                         onDelete={(id) => handleDeleteContent(parseInt(id))}
-                        onDeactivate={handleDeactivateContent}
+                        onToggleActive={handleToggleActiveStatus}
                         onDuplicate={(content) => {
                           setCurrentContent({
                             title: `${content.title} (Copy)`,

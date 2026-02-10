@@ -53,7 +53,7 @@ interface ContentManagementCardProps {
   onEdit: (item: ContentItem) => void
   onDelete: (id: string) => void
   onDuplicate?: (item: ContentItem) => void
-  onDeactivate?: (item: ContentItem) => void
+  onToggleActive?: (item: ContentItem) => void
   onPreview?: (item: ContentItem) => void
   onViewStats?: (item: ContentItem) => void
   index?: number
@@ -84,7 +84,7 @@ export function ContentManagementCard({
   onEdit,
   onDelete,
   onDuplicate,
-  onDeactivate,
+  onToggleActive,
   onPreview,
   onViewStats,
   index = 0
@@ -143,10 +143,10 @@ export function ContentManagementCard({
                   View Stats
                 </DropdownMenuItem>
               )}
-              {onDeactivate && (
-                <DropdownMenuItem onClick={() => onDeactivate(content)}>
-                  <Power className="mr-2 h-4 w-4" />
-                  {content.isExclusive ? 'Deactivate' : 'Deactivate'}
+              {onToggleActive && (
+                <DropdownMenuItem onClick={() => onToggleActive(content)}>
+                  <Power className={`mr-2 h-4 w-4 ${!content.isActive ? 'text-green-600' : ''}`} />
+                  {!content.isActive ? 'Activate' : 'Deactivate'}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
