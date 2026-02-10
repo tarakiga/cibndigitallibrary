@@ -144,7 +144,8 @@ export default function AdminSettingsPage() {
       setIsLoadingContent(true);
       const response = await contentService.getContent({
         search: searchTerm,
-        page_size: 100
+        page_size: 100,
+        include_inactive: true
       });
       
       // Transform the API response to match LibraryItem format

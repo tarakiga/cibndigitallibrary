@@ -64,11 +64,16 @@ def list_content(
     search: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
+    include_inactive: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_dependency)
 ):
     """List content with filtering and pagination."""
-    query = db.query(Content).filter(Content.is_active == True)
+    query = db.query(Content)
+    
+    # Only allow admins to see inactive content
+    if not (include_inactive and current_user.role == UserRole.ADMIN):
+        query = query.filter(Content.is_active == True)
     
     # Filter exclusive content for non-CIBN members
     if current_user.role not in [UserRole.CIBN_MEMBER, UserRole.ADMIN]:

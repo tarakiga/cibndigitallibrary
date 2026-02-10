@@ -42,6 +42,7 @@ export interface ContentFilters {
   search?: string
   min_price?: number
   max_price?: number
+  include_inactive?: boolean
 }
 
 export const contentService = {
@@ -67,6 +68,7 @@ export const contentService = {
     if (filters?.search) params.append('search', filters.search)
     if (filters?.min_price !== undefined) params.append('min_price', filters.min_price.toString())
     if (filters?.max_price !== undefined) params.append('max_price', filters.max_price.toString())
+    if (filters?.include_inactive) params.append('include_inactive', 'true')
     
     const response = await apiClient.get<ContentListResponse>(`/content?${params.toString()}`)
     return response.data
