@@ -1,24 +1,29 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
 import { ordersApi } from '@/lib/api/orders'
 import { CheckCircle, XCircle } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 
 export default function PaymentCallbackPage() {
   const params = useSearchParams()
   const router = useRouter()
   const [status, setStatus] = useState<'success'|'error'|'pending'>('pending')
   const [message, setMessage] = useState('Verifying your payment...')
+  const verificationStarted = useRef(false)
 
   useEffect(() => {
     const ref = params.get('reference') || params.get('trxref') || ''
+    
     if (!ref) {
       setStatus('error')
       setMessage('Missing payment reference')
       const t = setTimeout(()=> router.replace('/library'), 2500)
       return () => clearTimeout(t)
     }
+
+    if (verificationStarted.current) return
+    verificationStarted.current = true
     
     const clearCart = () => {
       try {
@@ -45,10 +50,8 @@ export default function PaymentCallbackPage() {
         
         // Redirect to library with a small delay
         setTimeout(() => {
-          // Force refresh the library page to show newly purchased items
-          router.replace('/library?purchased=true')
-          // Refresh the page to ensure all data is up to date
-          window.location.reload()
+          // Force a hard navigation to ensure clean state and data refresh
+          window.location.href = '/library?purchased=true'
         }, 1500)
         
       } catch (e: any) {

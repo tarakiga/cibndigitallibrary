@@ -1,23 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
-import { X, ChevronLeft, ChevronRight, Check, Upload, FileText, Crown, Image as ImageIcon, CheckCircle2, Loader2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Switch } from '@/components/ui/switch'
-import { useCallback } from 'react'
+import { Textarea } from '@/components/ui/textarea'
 import { uploadService } from '@/lib/api/upload'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Check, CheckCircle2, ChevronLeft, ChevronRight, Crown, FileText, Image as ImageIcon, Loader2, Upload, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface ContentFormData {
   id?: string
@@ -455,7 +453,7 @@ export function ContentFormSlideout({
                             <SelectTrigger className="mt-1.5">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                               <SelectItem value="document">
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4" />
@@ -479,7 +477,7 @@ export function ContentFormSlideout({
                             <SelectTrigger className="mt-1.5">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                               <SelectItem value="exam_text">Exam Text</SelectItem>
                               <SelectItem value="cibn_publication">
                                 CIBN Publication

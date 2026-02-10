@@ -1,18 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
-  ShoppingCart as ShoppingCartIcon, Plus, Minus, X, CreditCard, Shield, Truck, FileText, Video, Headphones, 
-  Star, Clock, Users, Download, Play, ArrowRight, CheckCircle 
+import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/contexts/AuthContext'
+import { ordersApi } from '@/lib/api/orders'
+import {
+    CreditCard,
+    FileText,
+    Headphones,
+    Minus,
+    Plus,
+    Shield,
+    ShoppingCart as ShoppingCartIcon,
+    Video,
+    X
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 // Import motion from framer-motion with proper type
 type MotionDivProps = {
   initial: { opacity: number; x: number };
@@ -26,10 +36,6 @@ const MotionDiv: React.FC<MotionDivProps> = ({ initial, animate, className, chil
     {children}
   </div>
 );
-import { ordersApi } from '@/lib/api/orders'
-import { toast } from 'sonner'
-import { useAuth } from '@/contexts/AuthContext'
-import axios from 'axios'
 
 interface CartItem {
   id: number
@@ -375,7 +381,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       <SelectTrigger>
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white">
                         {nigerianStates.map((state) => (
                           <SelectItem key={state} value={state}>
                             {state}
