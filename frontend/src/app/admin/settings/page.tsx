@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { adminSettingsApi, type PaymentSettingsResponse } from '@/lib/api/admin';
 import { contentService, type Content, type ContentCategory, type ContentType } from '@/lib/api/content';
 import { uploadService } from '@/lib/api/upload';
 import { BarChart3, BookOpen, CreditCard, FileText, Mail, Package } from 'lucide-react';
@@ -320,9 +321,9 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Mock data and handlers for PaymentsSection
-  const [paymentSettings, setPaymentSettings] = useState({
-    active_mode: 'test' as 'test' | 'live',
+  // Payment Settings State
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettingsResponse>({
+    active_mode: 'test',
     test_public_key: '',
     live_public_key: '',
     has_test_secret: false,
@@ -330,10 +331,70 @@ export default function AdminSettingsPage() {
   });
   const [testSecretInput, setTestSecretInput] = useState('');
   const [liveSecretInput, setLiveSecretInput] = useState('');
+  const [isSavingPayments, setIsSavingPayments] = useState(false);
+  const [isTestingPayment, setIsTestingPayment] = useState(false);
 
-  const handleSavePaymentSettings = useCallback(() => {
-    // Implement save logic here
-    toast.success('Payment settings saved');
+  // Fetch payment settings
+  const fetchPaymentSettings = useCallback(async () => {
+    try {
+      const settings = await adminSettingsApi.getPaymentSettings();
+      setPaymentSettings(settings);
+    } catch (error) {
+      console.error('Failed to fetch payment settings:', error);
+      toast.error('Failed to load payment settings');
+    }
+  }, []);
+
+  // Load payment settings on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchLibraryItems();
+      fetchPaymentSettings();
+    }
+  }, [fetchLibraryItems, fetchPaymentSettings, isAuthenticated]);
+
+  const handleSavePaymentSettings = useCallback(async () => {
+    setIsSavingPayments(true);
+    try {
+      const payload: any = {
+        active_mode: paymentSettings.active_mode,
+        test_public_key: paymentSettings.test_public_key,
+        live_public_key: paymentSettings.live_public_key,
+      };
+
+      if (testSecretInput) payload.test_secret_key = testSecretInput;
+      if (liveSecretInput) payload.live_secret_key = liveSecretInput;
+
+      const updated = await adminSettingsApi.updatePaymentSettings(payload);
+      setPaymentSettings(updated);
+      setTestSecretInput('');
+      setLiveSecretInput('');
+      toast.success('Payment settings saved successfully');
+    } catch (error: any) {
+      console.error('Failed to save payment settings:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to save payment settings');
+    } finally {
+      setIsSavingPayments(false);
+    }
+  }, [paymentSettings, testSecretInput, liveSecretInput]);
+
+  const handleTestPayment = useCallback(async () => {
+    setIsTestingPayment(true);
+    try {
+      const result = await adminSettingsApi.testPaymentSettings();
+      if (result.ok) {
+        toast.success(result.message || 'Test payment successful', {
+          description: result.reference ? `Reference: ${result.reference}` : undefined
+        });
+      } else {
+        toast.error(result.message || 'Test payment failed');
+      }
+    } catch (error: any) {
+      console.error('Test payment failed:', error);
+      toast.error(error?.response?.data?.detail || 'Test payment failed');
+    } finally {
+      setIsTestingPayment(false);
+    }
   }, []);
 
   if (isLoading || !isClient) {
@@ -571,19 +632,21 @@ export default function AdminSettingsPage() {
               <div className="space-y-6">
                 <h2 className="text-xl font-medium">Payment Settings</h2>
                 <PaymentsSection
-                  paymentSettings={paymentSettings}
+                  paymentSettings={paymentSettings as any}
                   onPaymentSettingsChange={(updates) =>
                     setPaymentSettings(prev => ({ ...prev, ...updates }))
                   }
                   onSave={handleSavePaymentSettings}
+                  onTestPayment={handleTestPayment}
                   loading={false}
-                  saving={false}
+                  saving={isSavingPayments}
                   testSecretInput={testSecretInput}
                   onTestSecretInputChange={setTestSecretInput}
                   liveSecretInput={liveSecretInput}
                   onLiveSecretInputChange={setLiveSecretInput}
                   hasTestSecret={paymentSettings.has_test_secret}
                   hasLiveSecret={paymentSettings.has_live_secret}
+                  isTestingPayment={isTestingPayment}
                 />
               </div>
             )}

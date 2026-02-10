@@ -21,6 +21,7 @@ interface PaymentsSectionProps {
   paymentSettings: PaymentSettings;
   onPaymentSettingsChange: (settings: Partial<PaymentSettings>) => void;
   onSave: () => void;
+  onTestPayment: () => void;
   loading: boolean;
   saving: boolean;
   testSecretInput: string;
@@ -29,12 +30,14 @@ interface PaymentsSectionProps {
   onLiveSecretInputChange: (value: string) => void;
   hasTestSecret: boolean;
   hasLiveSecret: boolean;
+  isTestingPayment: boolean;
 }
 
 export function PaymentsSection({
   paymentSettings,
   onPaymentSettingsChange,
   onSave,
+  onTestPayment,
   loading,
   saving,
   testSecretInput,
@@ -43,11 +46,10 @@ export function PaymentsSection({
   onLiveSecretInputChange,
   hasTestSecret,
   hasLiveSecret,
+  isTestingPayment
 }: PaymentsSectionProps) {
   const [showTestSecret, setShowTestSecret] = useState(false);
   const [showLiveSecret, setShowLiveSecret] = useState(false);
-  const [testSecretSaved, setTestSecretSaved] = useState(false);
-  const [liveSecretSaved, setLiveSecretSaved] = useState(false);
 
   const handleModeChange = (mode: 'test' | 'live') => {
     onPaymentSettingsChange({ active_mode: mode });
@@ -59,22 +61,6 @@ export function PaymentsSection({
 
   const handleLivePublicKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onPaymentSettingsChange({ live_public_key: e.target.value });
-  };
-
-  const handleSaveTestSecret = () => {
-    // In a real app, you would save the test secret key to your backend
-    // For this demo, we'll just simulate a successful save
-    setTestSecretSaved(true);
-    onPaymentSettingsChange({ has_test_secret: true });
-    setTimeout(() => setTestSecretSaved(false), 3000);
-  };
-
-  const handleSaveLiveSecret = () => {
-    // In a real app, you would save the live secret key to your backend
-    // For this demo, we'll just simulate a successful save
-    setLiveSecretSaved(true);
-    onPaymentSettingsChange({ has_live_secret: true });
-    setTimeout(() => setLiveSecretSaved(false), 3000);
   };
 
   return (
@@ -186,46 +172,24 @@ export function PaymentsSection({
                     value={testSecretInput}
                     onChange={(e) => onTestSecretInputChange(e.target.value)}
                     placeholder="sk_test_..."
-                    disabled={hasTestSecret || saving}
-                    className={hasTestSecret ? 'bg-gray-50' : ''}
+                    disabled={saving}
+                    className={hasTestSecret && !testSecretInput ? 'bg-gray-50' : ''}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 space-x-2">
-                    {!hasTestSecret && (
-                      <button
-                        type="button"
-                        onClick={() => setShowTestSecret(!showTestSecret)}
-                        className="text-sm text-muted-foreground hover:text-foreground"
-                      >
-                        {showTestSecret ? 'Hide' : 'Show'}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowTestSecret(!showTestSecret)}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {showTestSecret ? 'Hide' : 'Show'}
+                    </button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {hasTestSecret
-                    ? 'Your test secret key is securely stored.'
+                  {hasTestSecret && !testSecretInput
+                    ? 'Your test secret key is securely stored. Enter a new value to update it.'
                     : 'Your test secret API key. This will be encrypted and stored securely.'}
                 </p>
-                {!hasTestSecret && (
-                  <div className="mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveTestSecret}
-                      disabled={!testSecretInput || saving}
-                    >
-                      {testSecretSaved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Saved
-                        </>
-                      ) : (
-                        'Save Secret Key'
-                      )}
-                    </Button>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -246,13 +210,25 @@ export function PaymentsSection({
                   <div>
                     <h4 className="font-medium">Test Payment</h4>
                     <p className="text-sm text-muted-foreground">
-                      Process a $1.00 test transaction
+                      Process a $1.00 test transaction to {paymentSettings.active_mode === 'test' ? 'verify your test keys' : 'verify your live keys (CAUTION)'}
                     </p>
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <Button variant="outline" size="sm">
-                    Process Test Payment
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onTestPayment}
+                    disabled={isTestingPayment || (!hasTestSecret && !testSecretInput && paymentSettings.active_mode === 'test')}
+                  >
+                    {isTestingPayment ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Process Test Payment'
+                    )}
                   </Button>
                 </div>
               </div>
@@ -300,47 +276,24 @@ export function PaymentsSection({
                     value={liveSecretInput}
                     onChange={(e) => onLiveSecretInputChange(e.target.value)}
                     placeholder="sk_live_..."
-                    disabled={hasLiveSecret || saving}
-                    className={hasLiveSecret ? 'bg-gray-50' : ''}
+                    disabled={saving}
+                    className={hasLiveSecret && !liveSecretInput ? 'bg-gray-50' : ''}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 space-x-2">
-                    {!hasLiveSecret && (
-                      <button
-                        type="button"
-                        onClick={() => setShowLiveSecret(!showLiveSecret)}
-                        className="text-sm text-muted-foreground hover:text-foreground"
-                      >
-                        {showLiveSecret ? 'Hide' : 'Show'}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowLiveSecret(!showLiveSecret)}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {showLiveSecret ? 'Hide' : 'Show'}
+                    </button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {hasLiveSecret
-                    ? 'Your live secret key is securely stored.'
+                  {hasLiveSecret && !liveSecretInput
+                    ? 'Your live secret key is securely stored. Enter a new value to update it.'
                     : 'Your live secret API key. This will be encrypted and stored securely.'}
                 </p>
-                {!hasLiveSecret && (
-                  <div className="mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveLiveSecret}
-                      disabled={!liveSecretInput || saving}
-                      className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                    >
-                      {liveSecretSaved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Saved
-                        </>
-                      ) : (
-                        'Save Secret Key'
-                      )}
-                    </Button>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
