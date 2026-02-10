@@ -20,9 +20,20 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Add password reset fields to users table
-    op.add_column('users', sa.Column('reset_token', sa.String(), nullable=True))
-    op.add_column('users', sa.Column('reset_token_expires', sa.DateTime(timezone=True), nullable=True))
-    op.create_index(op.f('ix_users_reset_token'), 'users', ['reset_token'], unique=False)
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('users')]
+    
+    if 'reset_token' not in columns:
+        op.add_column('users', sa.Column('reset_token', sa.String(), nullable=True))
+        
+    if 'reset_token_expires' not in columns:
+        op.add_column('users', sa.Column('reset_token_expires', sa.DateTime(timezone=True), nullable=True))
+        
+    # Check for index existence before creating
+    indexes = [i['name'] for i in inspector.get_indexes('users')]
+    if 'ix_users_reset_token' not in indexes:
+        op.create_index(op.f('ix_users_reset_token'), 'users', ['reset_token'], unique=False)
 
 
 def downgrade() -> None:
