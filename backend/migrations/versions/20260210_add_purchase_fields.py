@@ -1,19 +1,20 @@
 """add missing purchase fields
 
 Revision ID: 20260210_add_purchase_fields
-Revises: 5aadde01fa77
+Revises: 58a8fe653148
 Create Date: 2026-02-10
 """
+
+from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
 
-# revision identifiers, used by Alembic.
-revision = "20260210_add_purchase_fields"
-down_revision = "5aadde01fa77"
-branch_labels = None
-depends_on = None
+revision: str = "20260210_add_purchase_fields"
+down_revision: Union[str, None] = "58a8fe653148"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
