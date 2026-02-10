@@ -1,17 +1,22 @@
 "use client"
 
-import React, { useMemo, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, Mail, Phone, Lock, CheckCircle2, AlertCircle, 
-  Eye, EyeOff, Shield, Sparkles 
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAuth } from '@/contexts/AuthContext'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+    AlertCircle,
+    CheckCircle2,
+    Eye, EyeOff,
+    Lock,
+    Mail, Phone,
+    Shield, Sparkles,
+    User
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useMemo, useState } from 'react'
 
 interface SignupModalProps {
   isOpen: boolean
@@ -151,6 +156,7 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
                 id="su-fullname" 
                 value={fullName} 
                 onChange={(e)=>setFullName(e.target.value)} 
+                onClear={() => setFullName('')}
                 placeholder="Enter your full name"
                 className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
               />
@@ -168,6 +174,7 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
                   type="email" 
                   value={email} 
                   onChange={(e)=>setEmail(e.target.value)} 
+                  onClear={() => setEmail('')}
                   placeholder="your.email@example.com"
                   className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
                 />
@@ -182,6 +189,7 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
                   type="tel"
                   value={phone} 
                   onChange={(e)=>setPhone(e.target.value)} 
+                  onClear={() => setPhone('')}
                   placeholder="+234 800 000 0000"
                   className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
                 />
@@ -201,6 +209,7 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
                     type={showPw ? 'text' : 'password'} 
                     value={password} 
                     onChange={(e)=>setPassword(e.target.value)} 
+                    onClear={() => setPassword('')}
                     placeholder="Create a strong password"
                     className="h-11 pr-10 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
                   />
@@ -247,6 +256,7 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
                     type={showConfirmPw ? 'text' : 'password'} 
                     value={confirmPassword} 
                     onChange={(e)=>setConfirmPassword(e.target.value)} 
+                    onClear={() => setConfirmPassword('')}
                     placeholder="Confirm your password"
                     className="h-11 pr-10 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
                   />

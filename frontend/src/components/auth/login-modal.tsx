@@ -1,32 +1,38 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMemo, useState } from "react";
-import { 
-  Mail, Lock, Eye, EyeOff, AlertCircle, LogIn, 
-  Shield, Crown, Sparkles 
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { CIBN_DEPARTMENT_OPTIONS } from "@/lib/config/auth";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    AlertCircle,
+    Crown,
+    Eye, EyeOff,
+    Lock,
+    LogIn,
+    Mail,
+    Shield,
+    Sparkles
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
 const getErrorMessage = (error: any, fallback: string) => {
   const detail =
@@ -248,7 +254,7 @@ export function LoginModal({
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label htmlFor="login-email" className="text-gray-700 font-medium">
                     <Mail className="w-4 h-4 inline mr-2" />
                     Email Address
@@ -258,6 +264,7 @@ export function LoginModal({
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onClear={() => setEmail('')}
                     placeholder="your.email@example.com"
                     className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
                   />
@@ -274,6 +281,7 @@ export function LoginModal({
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onClear={() => setPassword('')}
                       placeholder="Enter your password"
                       className="h-11 pr-10 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
                     />
@@ -386,6 +394,7 @@ export function LoginModal({
                     id="cibn-empid"
                     value={empId}
                     onChange={(e) => setEmpId(e.target.value)}
+                    onClear={() => setEmpId('')}
                     placeholder="Enter your CIBN Employee ID"
                     className="h-11 border-gray-300 focus:border-[#FFD700] focus:ring-[#FFD700]"
                   />
@@ -423,6 +432,7 @@ export function LoginModal({
                       type={showCibnPassword ? "text" : "password"}
                       value={cibnPassword}
                       onChange={(e) => setCibnPassword(e.target.value)}
+                      onClear={() => setCibnPassword('')}
                       placeholder="Enter your password"
                       className="h-11 pr-10 border-gray-300 focus:border-[#FFD700] focus:ring-[#FFD700]"
                     />

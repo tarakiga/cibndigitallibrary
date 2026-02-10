@@ -405,6 +405,7 @@ export function ContentFormSlideout({
                             id="title"
                             value={formData.title}
                             onChange={(e) => handleChange('title', e.target.value)}
+                            onClear={() => handleChange('title', '')}
                             placeholder="Enter content title..."
                             className="mt-1.5"
                           />
@@ -418,6 +419,7 @@ export function ContentFormSlideout({
                             id="description"
                             value={formData.description}
                             onChange={(e) => handleChange('description', e.target.value)}
+                            onClear={() => handleChange('description', '')}
                             placeholder="Describe your content..."
                             rows={6}
                             className="mt-1.5"
@@ -513,22 +515,20 @@ export function ContentFormSlideout({
                             <Label htmlFor="price" className="text-sm font-medium">
                               Price (₦)
                             </Label>
-                            <div className="mt-1.5 relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                ₦
-                              </span>
-                              <Input
-                                id="price"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={formData.price}
-                                onChange={(e) =>
-                                  handleChange('price', parseFloat(e.target.value) || 0)
-                                }
-                                className="pl-8"
-                              />
-                            </div>
+                            <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500">₦</span>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="0.00"
+                      className="pl-8"
+                      value={formData.price || ''}
+                      onChange={(e) =>
+                        handleChange('price', parseFloat(e.target.value) || 0)
+                      }
+                      onClear={() => handleChange('price', 0)}
+                    />
+                  </div>
                             <p className="text-xs text-gray-500 mt-1">
                               Set to 0 to make this content free
                             </p>

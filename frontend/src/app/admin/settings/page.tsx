@@ -287,6 +287,20 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // Handle deactivate content
+  const handleDeactivateContent = async (item: any) => {
+    if (confirm(`Are you sure you want to deactivate "${item.title}"?`)) {
+      try {
+        await contentService.updateContent(parseInt(item.id), { is_active: false });
+        toast.success('Content deactivated successfully');
+        await fetchLibraryItems();
+      } catch (error: any) {
+        console.error('Failed to deactivate content:', error);
+        toast.error(error?.response?.data?.detail || 'Failed to deactivate content');
+      }
+    }
+  };
+
   // Handle file upload
   const handleFileUpload = async (file: File): Promise<string> => {
     setIsUploading(true);
@@ -577,6 +591,7 @@ export default function AdminSettingsPage() {
                           setIsEditing(true);
                         }}
                         onDelete={(id) => handleDeleteContent(parseInt(id))}
+                        onDeactivate={handleDeactivateContent}
                         onDuplicate={(content) => {
                           setCurrentContent({
                             title: `${content.title} (Copy)`,

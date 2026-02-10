@@ -306,6 +306,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       id="firstName"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onClear={() => setFormData({ ...formData, firstName: '' })}
                       placeholder="Enter first name"
                       required
                       disabled={isLoadingProfile}
@@ -317,6 +318,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       id="lastName"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onClear={() => setFormData({ ...formData, lastName: '' })}
                       placeholder="Enter last name"
                       required
                       disabled={isLoadingProfile}
@@ -331,6 +333,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onClear={() => setFormData({ ...formData, email: '' })}
                       placeholder="your@email.com"
                       required
                       disabled={isLoadingProfile}
@@ -342,6 +345,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       id="phone"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onClear={() => setFormData({ ...formData, phone: '' })}
                       placeholder="+234 800 000 0000"
                       required
                       disabled={isLoadingProfile}
@@ -354,6 +358,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                     id="address"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onClear={() => setFormData({ ...formData, address: '' })}
                     placeholder="Your full delivery address"
                     required
                     disabled={isLoadingProfile}
@@ -366,6 +371,7 @@ export function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       id="city"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      onClear={() => setFormData({ ...formData, city: '' })}
                       placeholder="City"
                       required
                       disabled={isLoadingProfile}

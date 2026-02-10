@@ -1,22 +1,33 @@
 'use client'
 
-import { useState } from 'react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  BookOpen, Video, FileText, Headphones, Package, Crown, 
-  MoreVertical, Edit, Copy, Eye, BarChart3, Trash2, Play
-} from 'lucide-react'
 import { motion } from 'framer-motion'
+import {
+    BarChart3,
+    BookOpen,
+    Copy,
+    Crown,
+    Edit,
+    Eye,
+    FileText, Headphones,
+    MoreVertical,
+    Package,
+    Play,
+    Power,
+    Trash2,
+    Video
+} from 'lucide-react'
+import { useState } from 'react'
 
 interface ContentItem {
   id: string
@@ -41,6 +52,7 @@ interface ContentManagementCardProps {
   onEdit: (item: ContentItem) => void
   onDelete: (id: string) => void
   onDuplicate?: (item: ContentItem) => void
+  onDeactivate?: (item: ContentItem) => void
   onPreview?: (item: ContentItem) => void
   onViewStats?: (item: ContentItem) => void
   index?: number
@@ -71,6 +83,7 @@ export function ContentManagementCard({
   onEdit,
   onDelete,
   onDuplicate,
+  onDeactivate,
   onPreview,
   onViewStats,
   index = 0
@@ -127,6 +140,12 @@ export function ContentManagementCard({
                 <DropdownMenuItem onClick={() => onViewStats(content)}>
                   <BarChart3 className="mr-2 h-4 w-4" />
                   View Stats
+                </DropdownMenuItem>
+              )}
+              {onDeactivate && (
+                <DropdownMenuItem onClick={() => onDeactivate(content)}>
+                  <Power className="mr-2 h-4 w-4" />
+                  {content.isExclusive ? 'Deactivate' : 'Deactivate'}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
