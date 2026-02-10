@@ -11,8 +11,13 @@ import axios, {
 import authService from "./auth";
 
 const isDev = process.env.NODE_ENV === "development";
+const ENV_API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+  ENV_API_BASE_URL ||
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api/v1`
+    : "http://localhost:8000/api/v1");
 
 const navigateTo = (url: string) => {
   if (typeof window === "undefined") return;
