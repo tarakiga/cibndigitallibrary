@@ -39,6 +39,7 @@ interface ContentItem {
   fileUrl?: string
   image?: string
   isExclusive?: boolean
+  isActive?: boolean
   price?: number
   isFree?: boolean
   createdAt?: string
@@ -192,6 +193,11 @@ export function ContentManagementCard({
           
           {/* Badges Overlay */}
           <div className="absolute bottom-3 right-3 flex flex-col gap-2">
+            {!content.isActive && (
+              <Badge className="bg-gray-100 text-gray-500 border-gray-200 px-2 py-1 text-xs font-semibold flex items-center gap-1">
+                Inactive
+              </Badge>
+            )}
             {content.isExclusive && (
               <Badge className="bg-[#FFD700] text-[#002366] hover:bg-[#FFD700]/90 px-2 py-1 text-xs font-semibold flex items-center gap-1">
                 <Crown className="w-3 h-3" />

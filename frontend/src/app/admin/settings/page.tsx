@@ -69,6 +69,7 @@ interface LibraryItem {
   fileUrl: string
   image: string
   isExclusive: boolean
+  isActive: boolean
   price: number
   isFree: boolean
   createdAt: string
@@ -157,6 +158,7 @@ export default function AdminSettingsPage() {
         fileUrl: item.file_url || '',
         image: item.thumbnail_url || item.image_url || '',
         isExclusive: item.is_exclusive || false,
+        isActive: item.is_active !== undefined ? item.is_active : true,
         price: item.price || 0,
         isFree: item.is_free !== undefined ? item.is_free : (item.price === 0),
         createdAt: item.created_at || new Date().toISOString(),
@@ -600,7 +602,7 @@ export default function AdminSettingsPage() {
                             category: content.category as ContentCategory,
                             price: content.price,
                             is_exclusive: content.isExclusive,
-                            is_active: true,
+                            is_active: content.isActive !== undefined ? content.isActive : true,
                             stock_quantity: 0
                           });
                           setIsEditing(true);
