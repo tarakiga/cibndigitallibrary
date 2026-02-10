@@ -545,13 +545,18 @@ export function ContentFormSlideout({
                                 <Label htmlFor="is_exclusive" className="font-semibold text-gray-900">
                                   Exclusive Content
                                 </Label>
-                                <Switch
-                                  id="is_exclusive"
-                                  checked={formData.is_exclusive}
-                                  onCheckedChange={(checked) =>
-                                    handleChange('is_exclusive', checked)
-                                  }
-                                />
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-medium ${formData.is_exclusive ? 'text-amber-600' : 'text-gray-500'}`}>
+                                    {formData.is_exclusive ? 'Exclusive' : 'Standard'}
+                                  </span>
+                                  <Switch
+                                    id="is_exclusive"
+                                    checked={formData.is_exclusive}
+                                    onCheckedChange={(checked) =>
+                                      handleChange('is_exclusive', checked)
+                                    }
+                                  />
+                                </div>
                               </div>
                               <p className="text-sm text-gray-600 mt-1">
                                 {formData.is_exclusive 
@@ -570,13 +575,18 @@ export function ContentFormSlideout({
                                 <Label htmlFor="is_active" className="font-semibold text-gray-900">
                                   Active Status
                                 </Label>
-                                <Switch
-                                  id="is_active"
-                                  checked={formData.is_active}
-                                  onCheckedChange={(checked) =>
-                                    handleChange('is_active', checked)
-                                  }
-                                />
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-medium ${formData.is_active ? 'text-[#059669]' : 'text-gray-500'}`}>
+                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                  </span>
+                                  <Switch
+                                    id="is_active"
+                                    checked={formData.is_active}
+                                    onCheckedChange={(checked) =>
+                                      handleChange('is_active', checked)
+                                    }
+                                  />
+                                </div>
                               </div>
                               <p className="text-sm text-gray-600 mt-1">
                                 Inactive content won't be visible to users
