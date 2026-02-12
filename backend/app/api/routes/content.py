@@ -4,7 +4,7 @@ from sqlalchemy import func
 from typing import Optional, List
 from app.db.session import get_db
 from app.schemas import ContentCreate, ContentUpdate, ContentResponse, ContentListResponse
-from app.models import Content, ContentType, ContentCategory, User, UserRole, Purchase
+from app.models import Content, ContentType, ContentCategory, User, UserRole, Purchase, ContentProgress, OrderItem
 from app.api.dependencies import get_current_user_dependency, require_admin
 import os
 import shutil
