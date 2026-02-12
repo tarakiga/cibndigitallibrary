@@ -206,25 +206,19 @@ def delete_content(
         )
     
     try:
-        # Check if content has COMPLETED purchases
-        purchase_count = db.query(func.count(Purchase.id)).filter(Purchase.content_id == content_id).scalar()
-        if purchase_count > 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot delete content with {purchase_count} purchases. Consider deactivating instead."
-            )
-        
-        # Delete related OrderItems (pending/abandoned carts)
-        db.query(OrderItem).filter(OrderItem.content_id == content_id).delete()
-        
-        # Delete related ContentProgress
-        db.query(ContentProgress).filter(ContentProgress.content_id == content_id).delete()
+        # Cascade-delete all related records
+        deleted_progress = db.query(ContentProgress).filter(ContentProgress.content_id == content_id).delete()
+        deleted_purchases = db.query(Purchase).filter(Purchase.content_id == content_id).delete()
+        deleted_order_items = db.query(OrderItem).filter(OrderItem.content_id == content_id).delete()
 
-        # Delete the content
+        logger.info(
+            f"Deleting content {content_id}: removed {deleted_progress} progress, "
+            f"{deleted_purchases} purchases, {deleted_order_items} order items"
+        )
+
+        # Delete the content itself
         db.delete(content)
         db.commit()
-    except HTTPException:
-        raise
     except Exception as e:
         db.rollback()
         logger.exception("Delete content failed", exc_info=e)
