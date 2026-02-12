@@ -57,9 +57,8 @@ apiClient.interceptors.request.use(
     if (typeof window !== "undefined") {
       try {
         token = localStorage.getItem("access_token");
-        console.log("Auth Token:", token ? "Token exists" : "No token found");
-      } catch (error) {
-        console.error("Error accessing localStorage:", error);
+      } catch {
+        // localStorage unavailable (e.g. SSR, private browsing)
       }
     }
 

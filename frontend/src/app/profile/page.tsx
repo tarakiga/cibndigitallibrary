@@ -60,10 +60,10 @@ export default function ProfilePage() {
       const purchasedResponse = await apiClient.get('/content/me/purchased')
       setStats(prev => ({
         ...prev,
-        purchasedContent: purchasedResponse.data?.length || 0
+        purchasedContent: Array.isArray(purchasedResponse.data) ? purchasedResponse.data.length : 0
       }))
-    } catch (error) {
-      console.error('Failed to load stats:', error)
+    } catch {
+      // Stats are non-critical; keep defaults on failure
     }
   }
 

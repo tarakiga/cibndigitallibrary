@@ -1,12 +1,69 @@
-import { useState, useRef, ChangeEvent, KeyboardEvent } from 'react';
-import { Image as ImageIcon, Video, FileText, X, Tag as TagIcon, DollarSign, Lock, Globe, Clock, Upload } from 'lucide-react';
-import { Switch } from '@headlessui/react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { Switch } from '@headlessui/react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    AlertCircle,
+    ChevronRight,
+    Clock,
+    DollarSign,
+    Eye,
+    FileText,
+    Globe,
+    Image as ImageIcon,
+    Lock,
+    Sparkles,
+    Tag as TagIcon,
+    Upload,
+    Video,
+    X
+} from 'lucide-react';
+import { ChangeEvent, KeyboardEvent, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { LibraryFormData } from './types';
+
+const LibraryItemSchema = z.object({
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  description: z.string().min(10, { message: "Description must be at least 10 characters" }),
+  type: z.enum(['document', 'image', 'video']),
+  category: z.string().min(1, { message: "Category is required" }),
+  fileUrl: z.string().optional(),
+  image: z.string().optional(),
+  isFree: z.boolean(),
+  price: z.number().optional(),
+  isExclusive: z.boolean(),
+  isPublic: z.boolean(),
+  publishAt: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+}).refine((data) => data.isFree || (data.price && data.price > 0), {
+  message: "Price is required for paid content",
+  path: ["price"],
+}).refine((data) => data.fileUrl || data.type === 'document', { // Allow documents to adjust later potentially, or strictly require file
+    message: "File is required",
+    path: ["fileUrl"]
+});
 
 interface LibraryFormProps {
   formData: LibraryFormData;
@@ -26,7 +83,7 @@ export function LibraryForm({
   formData,
   onFormChange,
   onFileUpload,
-  onSubmit,
+  onSubmit: parentSubmit,
   onCancel,
   onDelete,
   categories,
@@ -35,6 +92,27 @@ export function LibraryForm({
   uploadProgress,
   isEditing,
 }: LibraryFormProps) {
+    const defaultValues = {
+        title: formData.title || '',
+        description: formData.description || '',
+        type: formData.type || 'document',
+        category: formData.category || '',
+        fileUrl: formData.fileUrl || '',
+        image: formData.image || '',
+        isFree: formData.isFree ?? true,
+        price: formData.price || 0,
+        isExclusive: formData.isExclusive || false,
+        isPublic: formData.isPublic ?? true,
+        publishAt: formData.publishAt || '',
+        tags: formData.tags || [],
+    };
+
+    const form = useForm<z.infer<typeof LibraryItemSchema>>({
+        resolver: zodResolver(LibraryItemSchema),
+        defaultValues,
+        mode: "onChange",
+    });
+
   const [selectedTags, setSelectedTags] = useState<string[]>(formData.tags || []);
   const [tagInput, setTagInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +126,7 @@ export function LibraryForm({
     
     try {
       const fileUrl = await onFileUpload(file, type, field);
+      form.setValue(field, fileUrl); // Update react-hook-form state
       onFormChange({ [field]: fileUrl });
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -61,6 +140,7 @@ export function LibraryForm({
       : [...selectedTags, tag];
     
     setSelectedTags(newTags);
+    form.setValue('tags', newTags);
     onFormChange({ tags: newTags });
   };
 
@@ -71,6 +151,7 @@ export function LibraryForm({
       if (!selectedTags.includes(newTag)) {
         const newTags = [...selectedTags, newTag];
         setSelectedTags(newTags);
+        form.setValue('tags', newTags);
         onFormChange({ tags: newTags });
       }
       setTagInput('');
@@ -80,11 +161,18 @@ export function LibraryForm({
   const handleRemoveTag = (tagToRemove: string) => {
     const newTags = selectedTags.filter((tag) => tag !== tagToRemove);
     setSelectedTags(newTags);
+    form.setValue('tags', newTags);
     onFormChange({ tags: newTags });
   };
 
+  const currentType = form.watch('type');
+  const currentImage = form.watch('image');
+  const isFree = form.watch('isFree');
+  const isExclusive = form.watch('isExclusive');
+  const isPublic = form.watch('isPublic');
+
   const getFileTypeIcon = () => {
-    switch (formData.type) {
+    switch (currentType) {
       case 'image':
         return <ImageIcon className="h-5 w-5 text-blue-500" />;
       case 'video':
@@ -94,535 +182,695 @@ export function LibraryForm({
     }
   };
 
+  const handleSubmit = (data: z.infer<typeof LibraryItemSchema>) => {
+      // Sync form data to parent before submit, just in case
+      onFormChange(data as any);
+      // Construct a synthetic event because parent expects one
+      const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+      parentSubmit(syntheticEvent);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => onFormChange({ title: e.target.value })}
-                  placeholder="Enter title"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <textarea
-                  id="description"
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  value={formData.description}
-                  onChange={(e) => onFormChange({ description: e.target.value })}
-                  placeholder="Enter description"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="type">Type</Label>
-                  <select
-                    id="type"
-                    className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    value={formData.type}
-                    onChange={(e) => onFormChange({ type: e.target.value as any })}
-                  >
-                    <option value="document">Document</option>
-                    <option value="image">Image</option>
-                    <option value="video">Video</option>
-                  </select>
+    <Form {...form}>
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onSubmit={form.handleSubmit(handleSubmit)} 
+          className="space-y-8"
+        >
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left column */}
+            <div className="lg:col-span-2 space-y-8">
+            {/* Basic Information */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-xl"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-premium-navy/10 rounded-xl">
+                    <FileText className="w-5 h-5 text-premium-navy dark:text-premium-emerald" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">General Information</h3>
+                    <p className="text-sm text-gray-500 font-medium">Define the core attributes of your resource</p>
+                  </div>
                 </div>
+                
+                <div className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Resource Title *</FormLabel>
+                            <FormControl>
+                                <Input
+                                    placeholder="e.g., Annual Financial Report 2024"
+                                    className="border-gray-200/50 dark:border-white/10"
+                                    {...field}
+                                    onChange={(e) => {
+                                        field.onChange(e);
+                                        onFormChange({ title: e.target.value });
+                                    }}
+                                />
+                            </FormControl>
+                            <FormMessage className="font-medium ml-1" />
+                        </FormItem>
+                    )}
+                />
 
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    id="category"
-                    className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    value={formData.category}
-                    onChange={(e) => onFormChange({ category: e.target.value })}
-                    required
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Comprehensive Description *</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    rows={4}
+                                    className="bg-white/50 dark:bg-black/20 backdrop-blur-sm border-gray-200/50 dark:border-white/10 rounded-2xl p-4 focus:ring-2 focus:ring-premium-emerald/20 transition-all min-h-[120px]"
+                                    placeholder="Provide detailed context about this material..."
+                                    {...field}
+                                    onChange={(e) => {
+                                        field.onChange(e);
+                                        onFormChange({ description: e.target.value });
+                                    }}
+                                />
+                            </FormControl>
+                            <FormMessage className="font-medium ml-1" />
+                        </FormItem>
+                    )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="type"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Resource Category Type *</FormLabel>
+                                <Select 
+                                  onValueChange={(val) => {
+                                    field.onChange(val);
+                                    onFormChange({ type: val as any });
+                                  }} 
+                                  defaultValue={field.value}
+                                >
+                                    <FormControl>
+                                      <SelectTrigger className="h-12 border-gray-200/50 dark:border-white/10 rounded-xl bg-white/50 dark:bg-white/5">
+                                        <SelectValue placeholder="Select type" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="rounded-2xl border-white/20 backdrop-blur-2xl">
+                                        <SelectItem value="document" className="rounded-xl">Document</SelectItem>
+                                        <SelectItem value="image" className="rounded-xl">Image</SelectItem>
+                                        <SelectItem value="video" className="rounded-xl">Video</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage className="font-medium ml-1" />
+                            </FormItem>
+                        )}
+                    />
+
+                     <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Thematic Classification *</FormLabel>
+                                <Select 
+                                  onValueChange={(val) => {
+                                    field.onChange(val);
+                                    onFormChange({ category: val });
+                                  }} 
+                                  defaultValue={field.value}
+                                >
+                                    <FormControl>
+                                      <SelectTrigger className="h-12 border-gray-200/50 dark:border-white/10 rounded-xl bg-white/50 dark:bg-white/5">
+                                        <SelectValue placeholder="Select classification" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="rounded-2xl border-white/20 backdrop-blur-2xl">
+                                        {categories.map((category) => (
+                                        <SelectItem key={category} value={category} className="rounded-xl">
+                                            {category}
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage className="font-medium ml-1" />
+                            </FormItem>
+                        )}
+                    />
                 </div>
-              </div>
-            </div>
-          </div>
+                </div>
+            </motion.div>
 
-          {/* File Upload */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">File</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <Label>Upload {formData.type === 'image' ? 'Image' : formData.type === 'video' ? 'Video' : 'Document'}</Label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    {getFileTypeIcon()}
-                    <div className="flex text-sm text-gray-600">
-                      <label
-                        htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+            {/* File Upload Area */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-xl"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-premium-emerald/10 rounded-xl">
+                    <Upload className="w-5 h-5 text-premium-emerald" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Media Assets</h3>
+                    <p className="text-sm text-gray-500 font-medium">Upload your resource files and thumbnails</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-8">
+                <div>
+                    <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1 mb-3 block">
+                      Primary Content ({currentType})
+                    </FormLabel>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed border-gray-200 dark:border-white/10 p-12 text-center transition-all hover:border-premium-emerald hover:bg-premium-emerald/5"
+                    >
+                      <motion.div 
+                        whileHover={{ y: -5 }}
+                        className="space-y-4"
                       >
-                        <span>Upload a file</span>
-                        <input
-                          id="file-upload"
-                          name="file-upload"
-                          type="file"
-                          className="sr-only"
-                          onChange={(e) => handleFileChange(e, 'content')}
-                          accept={
-                            formData.type === 'image' 
-                              ? 'image/*' 
-                              : formData.type === 'video' 
+                        <div className="mx-auto w-16 h-16 bg-premium-emerald/10 rounded-2xl flex items-center justify-center text-premium-emerald group-hover:scale-110 transition-transform">
+                          {getFileTypeIcon()}
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            {isUploading ? 'Transferring Data...' : 'Drop your file here'}
+                          </p>
+                          <p className="text-sm text-gray-500 font-medium max-w-[240px] mx-auto">
+                            Support for {currentType === 'image' ? 'high-res JPG/PNG' : currentType === 'video' ? 'MP4/WebM' : 'PDF/DOCX'} up to 50MB
+                          </p>
+                        </div>
+                        <Button type="button" variant="outline" className="rounded-xl border-gray-200 dark:border-white/10 font-bold">
+                          Select Local File
+                        </Button>
+                      </motion.div>
+
+                      <input
+                        id="file-upload"
+                        type="file"
+                        className="sr-only"
+                        onChange={(e) => handleFileChange(e, 'content')}
+                        accept={
+                            currentType === 'image' 
+                            ? 'image/*' 
+                            : currentType === 'video' 
                                 ? 'video/*' 
                                 : '.pdf,.doc,.docx,.txt'
-                          }
-                          ref={fileInputRef}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      {formData.type === 'image'
-                        ? 'PNG, JPG, GIF up to 10MB'
-                        : formData.type === 'video'
-                        ? 'MP4, WebM up to 50MB'
-                        : 'PDF, DOC, DOCX, TXT up to 10MB'}
-                    </p>
-                  </div>
-                </div>
-                {isUploading && (
-                  <div className="mt-2">
-                    <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${uploadProgress}%` }}
+                        }
+                        ref={fileInputRef}
                       />
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Uploading... {uploadProgress}%</p>
-                  </div>
-                )}
-              </div>
 
-              {formData.type === 'image' && (
-                <div>
-                  <Label>Thumbnail (Optional)</Label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    Upload a custom thumbnail (leave blank to use the first frame of the video)
-                  </p>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                    <div className="space-y-1 text-center">
-                      <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label
-                          htmlFor="image-upload"
-                          className="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-                        >
-                          <span>Upload a thumbnail</span>
-                          <input
-                            id="image-upload"
-                            name="image-upload"
-                            type="file"
-                            className="sr-only"
-                            onChange={(e) => handleFileChange(e, 'image')}
-                            accept="image/*"
-                            ref={imageInputRef}
+                    {isUploading && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 space-y-3"
+                      >
+                        <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                          <span>Progress</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="h-3 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden p-0.5">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-premium-navy to-premium-emerald rounded-full"
+                            animate={{ width: `${uploadProgress}%` }}
+                            transition={{ type: "spring", bounce: 0, duration: 0.5 }}
                           />
-                        </label>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    <AnimatePresence>
+                      {form.formState.errors.fileUrl && (
+                        <motion.p 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="text-sm font-bold text-red-500 mt-4 flex items-center gap-2"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          {form.formState.errors.fileUrl.message}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                </div>
+
+                {currentType === 'video' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1 mb-3 block">
+                        Custom Thumbnail (Optional)
+                      </FormLabel>
+                      <div 
+                        onClick={() => imageInputRef.current?.click()}
+                        className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-premium-gold/50 hover:bg-premium-gold/5 transition-all cursor-pointer group"
+                      >
+                        <div className="p-4 bg-gray-100 dark:bg-white/5 rounded-xl text-gray-400 group-hover:text-premium-gold transition-colors">
+                          <ImageIcon className="w-8 h-8" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">Brand your video</p>
+                          <p className="text-xs text-gray-500 font-medium">PNG or JPG up to 5MB</p>
+                        </div>
+                        <input
+                          id="image-upload"
+                          type="file"
+                          className="sr-only"
+                          onChange={(e) => handleFileChange(e, 'image')}
+                          accept="image/*"
+                          ref={imageInputRef}
+                        />
                       </div>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                    </div>
+                    </motion.div>
+                )}
+                </div>
+            </motion.div>
+
+            {/* Pricing & Access */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-xl"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-premium-gold/10 rounded-xl">
+                    <DollarSign className="w-5 h-5 text-premium-gold" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Access & Monetization</h3>
+                    <p className="text-sm text-gray-500 font-medium">Configure how users consume this content</p>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Pricing & Access */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Pricing & Access</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <Switch
-                  checked={formData.isFree}
-                  onChange={(checked) => onFormChange({ isFree: checked })}
-                  className={cn(
-                    formData.isFree ? 'bg-green-500' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                  )}
-                >
-                  <span className="sr-only">Free content</span>
-                  <span
-                    className={cn(
-                      formData.isFree ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+                
+                <div className="space-y-8">
+                <FormField
+                    control={form.control}
+                    name="isFree"
+                    render={({ field }) => (
+                        <FormItem>
+                         <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                            <div className="flex items-center gap-4">
+                              <div className={cn(
+                                "p-3 rounded-xl transition-colors",
+                                field.value ? "bg-premium-emerald/10 text-premium-emerald" : "bg-premium-navy/10 text-premium-navy"
+                              )}>
+                                {field.value ? <Globe className="w-5 h-5" /> : <DollarSign className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                  {field.value ? 'Open Access' : 'Commercial License'}
+                                </p>
+                                <p className="text-xs text-gray-500 font-medium">
+                                  {field.value ? 'Visible to all library patrons' : 'Requires payment per access'}
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={field.value}
+                              onChange={(checked) => {
+                                  field.onChange(checked);
+                                  onFormChange({ isFree: checked });
+                              }}
+                              className={cn(
+                                  field.value ? 'bg-premium-emerald' : 'bg-premium-navy',
+                                  'relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ring-offset-2 ring-premium-emerald'
+                              )}
+                            >
+                              <span className="sr-only">Free content toggle</span>
+                              <span
+                                  className={cn(
+                                  field.value ? 'translate-x-6' : 'translate-x-0',
+                                  'pointer-events-none relative inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out'
+                                  )}
+                              />
+                            </Switch>
+                        </div>
+                        </FormItem>
                     )}
-                  >
-                    <span
-                      className={cn(
-                        formData.isFree
-                          ? 'opacity-0 duration-100 ease-out'
-                          : 'opacity-100 duration-200 ease-in',
-                        'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity'
-                      )}
-                      aria-hidden="true"
-                    >
-                      <DollarSign className="h-3 w-3 text-gray-400" />
-                    </span>
-                    <span
-                      className={cn(
-                        formData.isFree
-                          ? 'opacity-100 duration-200 ease-in'
-                          : 'opacity-0 duration-100 ease-out',
-                        'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity'
-                      )}
-                      aria-hidden="true"
-                    >
-                      <Globe className="h-3 w-3 text-green-500" />
-                    </span>
-                  </span>
-                </Switch>
-                <span className="ml-3">
-                  <span className="text-sm font-medium text-gray-900">
-                    {formData.isFree ? 'Free content' : 'Paid content'}
-                  </span>
-                  <p className="text-sm text-gray-500">
-                    {formData.isFree
-                      ? 'This content will be available for free to all users.'
-                      : 'Set a price for this content.'}
-                  </p>
-                </span>
-              </div>
+                />
 
-              {!formData.isFree && (
-                <div>
-                  <Label htmlFor="price">Price (₦)</Label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">₦</span>
-                    </div>
-                    <Input
-                      type="number"
-                      name="price"
-                      id="price"
-                      min="0"
-                      step="0.01"
-                      value={formData.price || ''}
-                      onChange={(e) => onFormChange({ price: parseFloat(e.target.value) || 0 })}
-                      className="pl-7"
-                      placeholder="0.00"
-                      required={!formData.isFree}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center">
-                <Switch
-                  checked={formData.isExclusive}
-                  onChange={(checked) => onFormChange({ isExclusive: checked })}
-                  className={cn(
-                    formData.isExclusive ? 'bg-purple-500' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2'
+                <AnimatePresence mode="wait">
+                  {!isFree && (
+                       <motion.div
+                          key="price-input"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                       >
+                         <FormField
+                            control={form.control}
+                            name="price"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Asset Valuation (₦) *</FormLabel>
+                                    <FormControl>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-premium-emerald group-focus-within:text-premium-gold transition-colors">
+                                              <span className="font-bold">₦</span>
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className="pl-10 h-14 bg-white/50 dark:bg-white/5 border-gray-200/50 dark:border-white/10 rounded-2xl text-lg font-bold"
+                                                placeholder="0.00"
+                                                {...field}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value);
+                                                    field.onChange(val);
+                                                    onFormChange({ price: val || 0 });
+                                                }}
+                                            />
+                                        </div>
+                                    </FormControl>
+                                    <FormDescription className="ml-1 mt-1 font-medium">Standard marketplace price with tax inclusive.</FormDescription>
+                                    <FormMessage className="font-medium ml-1" />
+                                </FormItem>
+                            )}
+                        />
+                       </motion.div>
                   )}
-                >
-                  <span className="sr-only">Exclusive content</span>
-                  <span
-                    className={cn(
-                      formData.isExclusive ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        formData.isExclusive
-                          ? 'opacity-0 duration-100 ease-out'
-                          : 'opacity-100 duration-200 ease-in',
-                        'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity'
-                      )}
-                      aria-hidden="true"
-                    >
-                      <Globe className="h-3 w-3 text-gray-400" />
-                    </span>
-                    <span
-                      className={cn(
-                        formData.isExclusive
-                          ? 'opacity-100 duration-200 ease-in'
-                          : 'opacity-0 duration-100 ease-out',
-                        'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity'
-                      )}
-                      aria-hidden="true"
-                    >
-                      <Lock className="h-3 w-3 text-purple-500" />
-                    </span>
-                  </span>
-                </Switch>
-                <span className="ml-3">
-                  <span className="text-sm font-medium text-gray-900">Exclusive content</span>
-                  <p className="text-sm text-gray-500">
-                    {formData.isExclusive
-                      ? 'This content will only be available to premium members.'
-                      : 'This content will be available to all users.'}
-                  </p>
-                </span>
-              </div>
+                </AnimatePresence>
 
-              <div className="flex items-center">
-                <Switch
-                  checked={formData.isPublic}
-                  onChange={(checked) => onFormChange({ isPublic: checked })}
-                  className={cn(
-                    formData.isPublic ? 'bg-blue-500' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                  )}
-                >
-                  <span className="sr-only">Publish status</span>
-                  <span
-                    className={cn(
-                      formData.isPublic ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        formData.isPublic
-                          ? 'opacity-0 duration-100 ease-out'
-                          : 'opacity-100 duration-200 ease-in',
-                        'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity'
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                      control={form.control}
+                      name="isExclusive"
+                      render={({ field }) => (
+                           <FormItem>
+                              <div className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 dark:border-white/10">
+                                  <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                      "p-2 rounded-lg",
+                                      field.value ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-400"
+                                    )}>
+                                      <Lock className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Exclusive</p>
+                                  </div>
+                                  <Switch
+                                    checked={field.value}
+                                    onChange={(checked) => {
+                                        field.onChange(checked);
+                                        onFormChange({ isExclusive: checked });
+                                    }}
+                                    className={cn(
+                                        field.value ? 'bg-purple-500' : 'bg-gray-200 dark:bg-white/10',
+                                        'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200'
+                                    )}
+                                  >
+                                    <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ui-checked:translate-x-5" />
+                                  </Switch>
+                              </div>
+                           </FormItem>
                       )}
-                      aria-hidden="true"
-                    >
-                      <Lock className="h-3 w-3 text-gray-400" />
-                    </span>
-                    <span
-                      className={cn(
-                        formData.isPublic
-                          ? 'opacity-100 duration-200 ease-in'
-                          : 'opacity-0 duration-100 ease-out',
-                        'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity'
+                  />
+
+                  <FormField
+                      control={form.control}
+                      name="isPublic"
+                      render={({ field }) => (
+                           <FormItem>
+                              <div className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 dark:border-white/10">
+                                  <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                      "p-2 rounded-lg",
+                                      field.value ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"
+                                    )}>
+                                      <Eye className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Public</p>
+                                  </div>
+                                  <Switch
+                                    checked={field.value}
+                                    onChange={(checked) => {
+                                        field.onChange(checked);
+                                        onFormChange({ isPublic: checked });
+                                    }}
+                                    className={cn(
+                                        field.value ? 'bg-blue-500' : 'bg-gray-200 dark:bg-white/10',
+                                        'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200'
+                                    )}
+                                  >
+                                    <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ui-checked:translate-x-5" />
+                                  </Switch>
+                              </div>
+                          </FormItem>
                       )}
-                      aria-hidden="true"
-                    >
-                      <Globe className="h-3 w-3 text-blue-500" />
-                    </span>
-                  </span>
-                </Switch>
-                <span className="ml-3">
-                  <span className="text-sm font-medium text-gray-900">
-                    {formData.isPublic ? 'Public' : 'Private'}
-                  </span>
-                  <p className="text-sm text-gray-500">
-                    {formData.isPublic
-                      ? 'This content will be visible to everyone.'
-                      : 'Only you can see this content.'}
-                  </p>
-                </span>
-              </div>
-
-              {formData.isPublic && (
-                <div>
-                  <Label htmlFor="publishAt">Publish Date & Time</Label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                    <div className="relative flex-grow">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Clock className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="datetime-local"
-                        name="publishAt"
-                        id="publishAt"
-                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                        value={formData.publishAt || ''}
-                        onChange={(e) => onFormChange({ publishAt: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Leave empty to publish immediately.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-6">
-          {/* Preview */}
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Preview</h3>
-            </div>
-            <div className="p-4">
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="h-40 bg-gray-100 flex items-center justify-center">
-                  {formData.type === 'image' && formData.image ? (
-                    <img
-                      src={formData.image}
-                      alt="Preview"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : formData.type === 'video' ? (
-                    <div className="flex flex-col items-center text-gray-400">
-                      <Video className="h-10 w-10 mb-2" />
-                      <p className="text-sm">Video Preview</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center text-gray-400">
-                      <FileText className="h-10 w-10 mb-2" />
-                      <p className="text-sm">Document Preview</p>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h4 className="font-medium text-gray-900 truncate">
-                    {formData.title || 'Your Content Title'}
-                  </h4>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                    {formData.description || 'A brief description of your content will appear here...'}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {formData.category || 'Category'}
-                    </span>
-                    {formData.isFree ? (
-                      <span className="text-sm font-medium text-green-600">Free</span>
-                    ) : (
-                      <span className="text-sm font-medium text-gray-900">
-                        ₦{formData.price?.toLocaleString() || '0'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Tags</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Add tags to help users find your content.
-              </p>
-            </div>
-            <div className="p-4">
-              <div className="flex flex-wrap gap-2 mb-3">
-                {selectedTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-1.5 inline-flex items-center justify-center rounded-full h-4 w-4 text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:outline-none"
-                    >
-                      <span className="sr-only">Remove tag</span>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div>
-                <Label htmlFor="tag-input">Add tags</Label>
-                <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <TagIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    type="text"
-                    id="tag-input"
-                    className="pl-10"
-                    placeholder="Type and press enter to add"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleAddTag}
                   />
                 </div>
-                <div className="mt-2">
-                  <p className="text-xs text-gray-500">
-                    Popular tags:{' '}
-                    {availableTags
-                      .filter((tag) => !selectedTags.includes(tag))
-                      .slice(0, 5)
-                      .map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => handleTagToggle(tag)}
-                          className="text-blue-600 hover:text-blue-800 mr-1"
-                        >
-                          {tag}
-                        </button>
-                      ))}
-                  </p>
+
+                {isPublic && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                    >
+                      <FormField
+                          control={form.control}
+                          name="publishAt"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Scheduled Release</FormLabel>
+                                  <FormControl>
+                                      <div className="relative group">
+                                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-premium-emerald transition-colors">
+                                            <Clock className="h-5 w-5" />
+                                          </div>
+                                          <input
+                                            type="datetime-local"
+                                            className="h-14 w-full pl-12 bg-white/50 dark:bg-white/5 border-gray-200/50 dark:border-white/10 rounded-2xl font-semibold focus:ring-2 focus:ring-premium-emerald/20 transition-all"
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                onFormChange({ publishAt: e.target.value });
+                                            }}
+                                          />
+                                      </div>
+                                  </FormControl>
+                                  <FormDescription className="ml-1 mt-1 font-medium">Leave empty for immediate broadcast visibility.</FormDescription>
+                                  <FormMessage className="font-medium ml-1" />
+                              </FormItem>
+                          )}
+                      />
+                    </motion.div>
+                )}
                 </div>
-              </div>
+            </motion.div>
             </div>
-          </div>
+
+            {/* Right column */}
+            <div className="space-y-8">
+            {/* Real-time Preview */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="bg-premium-navy dark:bg-gray-900 border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl sticky top-8"
+            >
+                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-premium-emerald" />
+                    Live Preview
+                  </h3>
+                  <Badge variant="outline" className="text-[10px] uppercase tracking-tighter border-white/20 text-white/60">
+                    Draft State
+                  </Badge>
+                </div>
+                <div className="p-6">
+                  <div className="relative group aspect-video rounded-2xl overflow-hidden bg-black/40 border border-white/5">
+                    {currentType === 'image' && currentImage ? (
+                      <img
+                        src={currentImage}
+                        alt="Preview"
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
+                        {currentType === 'video' ? <Video className="w-12 h-12 mb-2" /> : <FileText className="w-12 h-12 mb-2" />}
+                        <span className="text-xs font-bold uppercase tracking-widest">{currentType} Preview</span>
+                      </div>
+                    )}
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-premium-emerald text-white rounded-lg border-none font-bold">
+                        {isFree ? 'Free' : `₦${form.watch('price')?.toLocaleString() || '0'}`}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-xl font-bold text-white line-clamp-1">
+                        {form.watch('title') || 'Untitled Resource'}
+                      </h4>
+                      <p className="text-sm text-white/50 font-medium line-clamp-2 leading-relaxed">
+                        {form.watch('description') || 'Define your content description to see how it renders for library patrons...'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className="bg-white/10 text-white/80 border-none rounded-lg h-7">
+                        {form.watch('category') || 'Uncategorized'}
+                      </Badge>
+                      {selectedTags.slice(0, 2).map(tag => (
+                        <Badge key={tag} className="bg-white/5 text-white/40 border-none rounded-lg h-7">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">
+                        <span>Visibility: {isPublic ? 'Broad' : 'Internal'}</span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{form.watch('publishAt') ? 'Scheduled' : 'Instant'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </motion.div>
+
+            {/* Smart Tags Management */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-[2rem] p-8 border border-white/20 shadow-xl"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-premium-navy/10 rounded-xl">
+                    <TagIcon className="w-5 h-5 text-premium-navy" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Classification</h3>
+                    <p className="text-xs text-gray-500 font-medium">Add meta tags for search engine discoverability</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex flex-wrap gap-2">
+                    <AnimatePresence mode="popLayout">
+                      {selectedTags.map((tag) => (
+                        <motion.div
+                          key={tag}
+                          layout
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                        >
+                          <Badge className="bg-premium-navy/5 text-premium-navy border-none h-8 pl-3 pr-1 rounded-xl flex items-center gap-1 group">
+                             <span className="font-bold text-xs">{tag}</span>
+                             <Button
+                               type="button"
+                               onClick={() => handleRemoveTag(tag)}
+                               variant="ghost"
+                               className="h-6 w-6 p-0 rounded-lg hover:bg-premium-navy/10 text-premium-navy/40 hover:text-premium-navy transition-all"
+                             >
+                                <X className="h-3 w-3" />
+                             </Button>
+                          </Badge>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Add Search Tags</Label>
+                    <div className="relative group">
+                      <Input
+                          type="text"
+                          className="pl-10 h-12 bg-gray-50 dark:bg-white/5 border-gray-200/50 dark:border-white/10 rounded-xl text-sm"
+                          placeholder="e.g. business, banking..."
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleAddTag}
+                      />
+                      <TagIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-premium-emerald transition-colors" />
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {availableTags
+                        .filter((tag) => !selectedTags.includes(tag))
+                        .slice(0, 4)
+                        .map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => handleTagToggle(tag)}
+                            className="text-[10px] font-bold text-premium-navy/60 hover:text-premium-navy bg-premium-navy/5 px-2.5 py-1.5 rounded-lg transition-all border border-transparent hover:border-premium-navy/20"
+                          >
+                            + {tag}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+            </motion.div>
+            </div>
         </div>
-      </div>
 
-      {/* Form Actions */}
-      <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:col-span-3 pt-6 border-t border-gray-100">
-        <button
-          type="submit"
-          disabled={isUploading}
-          className="w-full flex items-center justify-center py-3 px-6 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+        {/* Global Action Orchestrator */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-gray-100 dark:border-white/10"
         >
-          {isUploading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {isUploading ? 'Uploading...' : 'Saving...'}
-            </>
-          ) : isEditing ? (
-            'Update Content'
-          ) : (
-            'Publish Content'
-          )}
-        </button>
+            <Button
+              type="submit"
+              disabled={isUploading}
+              className="h-14 px-10 text-lg font-bold bg-premium-navy hover:scale-[1.02] active:scale-[0.98] transition-all rounded-[1.25rem] flex-1 shadow-xl shadow-premium-navy/20"
+            >
+              {isUploading ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Synchronizing...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  <span>{isEditing ? 'Commit Changes' : 'Publish to Library'}</span>
+                  <ChevronRight className="w-5 h-5 ml-1 opacity-50" />
+                </div>
+              )}
+            </Button>
 
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isUploading}
-          className="w-full py-3 px-6 text-base font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          Cancel
-        </button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isUploading}
+              className="h-14 px-10 text-lg font-bold border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-[1.25rem] transition-all"
+            >
+              Dismiss
+            </Button>
 
-        {isEditing && onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={isUploading}
-            className="w-full py-3 px-6 text-base font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            Delete Content
-          </button>
-        )}
-      </div>
-    </form>
+            {isEditing && onDelete && (
+              <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onDelete}
+                  disabled={isUploading}
+                  className="h-14 px-8 text-lg font-bold bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white dark:bg-red-950/20 dark:border-red-900/50 rounded-[1.25rem] transition-all"
+              >
+                  Delete Asset
+              </Button>
+            )}
+        </motion.div>
+        </motion.form>
+    </Form>
   );
 }

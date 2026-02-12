@@ -10,7 +10,7 @@ export const getItem = (key: string, storage: Storage = localStorage): any => {
     const item = storage.getItem(key);
     return item ? JSON.parse(item) : null;
   } catch (error) {
-    console.error(`Error reading ${key} from storage:`, error);
+    console.warn(`Error reading ${key} from storage:`, error);
     return null;
   }
 };
@@ -54,7 +54,7 @@ export const setItem = (
       }
     }
     
-    console.error(`Error saving to storage:`, error);
+    console.warn(`Error saving to storage:`, error);
     return false;
   }
 };
@@ -98,6 +98,11 @@ export const isStorageAvailable = (type: 'localStorage' | 'sessionStorage'): boo
  * Safely store purchased content with size limits
  */
 export const storePurchasedContent = (content: any[]): boolean => {
+  if (!Array.isArray(content)) {
+    console.warn('storePurchasedContent: received non-array data', content);
+    return false;
+  }
+
   try {
     // Only store essential data
     const essentialContent = content.map(item => ({
@@ -121,7 +126,7 @@ export const storePurchasedContent = (content: any[]): boolean => {
     
     return false;
   } catch (error) {
-    console.error('Error storing purchased content:', error);
+    console.warn('Error storing purchased content:', error);
     return false;
   }
 };
@@ -145,7 +150,7 @@ export const getPurchasedContent = (): any[] => {
     
     return [];
   } catch (error) {
-    console.error('Error getting purchased content:', error);
+    console.warn('Error getting purchased content:', error);
     return [];
   }
 };

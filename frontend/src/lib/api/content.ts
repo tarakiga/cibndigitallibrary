@@ -50,8 +50,12 @@ export const contentService = {
    * Get user's purchased content
    */
   async getPurchasedContent(): Promise<Content[]> {
-    const response = await apiClient.get<Content[]>('/content/me/purchased')
-    return response.data
+    try {
+      const response = await apiClient.get<Content[]>('/content/me/purchased')
+      return Array.isArray(response.data) ? response.data : []
+    } catch {
+      return []
+    }
   },
 
   /**

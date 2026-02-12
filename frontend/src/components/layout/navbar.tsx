@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/contexts/AuthContext'
 import { contentService } from '@/lib/api/content'
-import { storePurchasedContent } from '@/utils/storage'
+import { getPurchasedContent, storePurchasedContent } from '@/utils/storage'
 import { motion } from 'framer-motion'
 import { BookOpen, LogOut, Menu, Search, Settings, ShoppingCart as ShoppingCartIcon, User, Users } from 'lucide-react'
 import Image from 'next/image'
@@ -38,19 +38,22 @@ export function Navbar() {
       setIsLoading(true);
       const content = await contentService.getPurchasedContent();
       
-      // Store the content using our storage utility
-      storePurchasedContent(content);
+      const validatedContent = Array.isArray(content) ? content : [];
       
-      setPurchasedContent(content);
-    } catch (error) {
-      console.error('Error fetching purchased content:', error);
+      // Store the content using our storage utility
+      storePurchasedContent(validatedContent);
+      
+      setPurchasedContent(validatedContent);
+    } catch {
+      // Fallback to cached storage content, then empty array
+      const cached = getPurchasedContent();
+      setPurchasedContent(cached);
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Import the storage utility at the top of the file
-  // import { storePurchasedContent } from '@/utils/storage';
+
 
   useEffect(() => {
     if (isAuthenticated) {

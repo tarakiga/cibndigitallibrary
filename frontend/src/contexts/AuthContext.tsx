@@ -5,8 +5,8 @@
  * Provides authentication state and methods throughout the app
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authService, User, LoginCredentials, CIBNLoginCredentials, RegisterData } from '@/lib/api/auth'
+import { authService, CIBNLoginCredentials, LoginCredentials, RegisterData, User } from '@/lib/api/auth'
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 interface AuthContextType {
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false)
         }
       } catch (error) {
-        console.error('Error initializing auth:', error)
+        console.warn('Error initializing auth:', error)
         setIsLoading(false)
       }
     }
@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await authService.getCurrentUser()
       setUser(userData)
     } catch (error) {
-      console.error('Failed to refresh user:', error)
+      console.warn('Failed to refresh user:', error)
       logout()
     }
   }

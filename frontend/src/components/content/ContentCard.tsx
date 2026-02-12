@@ -1,17 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  BookOpen, Video, FileText, Headphones, Star, Clock, Users, 
-  Play, ShoppingCart, Lock, Heart, Package, Crown 
-} from 'lucide-react'
-import { motion } from 'framer-motion'
-import { toast } from 'sonner'
-import { Content } from '@/lib/api/content'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { useAuth } from '@/contexts/AuthContext'
+import { Content } from '@/lib/api/content'
+import { motion } from 'framer-motion'
+import {
+    BookOpen,
+    Clock,
+    Crown,
+    FileText, Headphones,
+    Heart, Package,
+    Play, ShoppingCart,
+    Users,
+    Video
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 interface ContentCardProps {
   item: Content
@@ -46,6 +53,7 @@ export function ContentCard({
   showActions = true 
 }: ContentCardProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const [favorites, setFavorites] = useState<number[]>([])
   const [cartItems, setCartItems] = useState<number[]>([])
   const [purchasedItems, setPurchasedItems] = useState<number[]>([])
@@ -292,7 +300,7 @@ export function ContentCard({
                     <Button 
                       size="sm" 
                       className="gap-2"
-                      onClick={() => window.location.href = `/content/${item.id}`}
+                      onClick={() => router.push(`/content/${item.id}`)}
                     >
                       View Details
                     </Button>
@@ -300,7 +308,7 @@ export function ContentCard({
                     <Button 
                       size="sm" 
                       className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => window.location.href = '/my-library'}
+                      onClick={() => router.push('/my-library')}
                     >
                       <BookOpen className="w-4 h-4" />
                       My Library

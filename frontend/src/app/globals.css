@@ -106,4 +106,16 @@
   .gold-shadow {
     box-shadow: 0 20px 25px -5px rgba(255, 215, 0, 0.3), 0 10px 10px -5px rgba(255, 215, 0, 0.1);
   }
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-md border border-white/10;
+  }
+  .premium-border {
+    @apply border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)];
+  }
+  .premium-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98];
+  }
 }

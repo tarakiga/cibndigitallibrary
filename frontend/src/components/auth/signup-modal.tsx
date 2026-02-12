@@ -2,21 +2,47 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthContext'
+import { zodResolver } from "@hookform/resolvers/zod"
 import { AnimatePresence, motion } from 'framer-motion'
 import {
     AlertCircle,
-    CheckCircle2,
     Eye, EyeOff,
-    Lock,
-    Mail, Phone,
-    Shield, Sparkles,
-    User
+    Sparkles
 } from 'lucide-react'
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+
+
+const SignupSchema = z.object({
+  full_name: z.string().min(2, { message: "Full name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  phone: z.string().optional(),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" })
+    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
+    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
+    .regex(/\d/, { message: "Password must contain at least one number" }),
+  confirmPassword: z.string(),
+  agree: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the terms and privacy policy",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type SignupFormValues = z.infer<typeof SignupSchema>;
 
 interface SignupModalProps {
   isOpen: boolean
@@ -25,26 +51,27 @@ interface SignupModalProps {
 }
 
 export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalProps) {
-  const { register, isLoading } = useAuth() as any
-
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [agree, setAgree] = useState(false)
+  const { register: registerUser, isLoading } = useAuth() as any
   const [showPw, setShowPw] = useState(false)
   const [showConfirmPw, setShowConfirmPw] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const valid = useMemo(() => (
-    fullName.trim().length > 0 &&
-    email.trim().length > 0 &&
-    password.trim().length >= 6 &&
-    password === confirmPassword &&
-    agree
-  ), [fullName, email, password, confirmPassword, agree])
+  const form = useForm<SignupFormValues>({
+    resolver: zodResolver(SignupSchema),
+    defaultValues: {
+      full_name: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      agree: false as any, // Cast to any to avoid type issues with literal(true)
+    },
+    mode: "onChange",
+  });
+
+  const { watch } = form;
+  const password = watch("password");
 
   const passwordStrength = useMemo(() => {
     if (!password) return { score: 0, label: '', color: '' }
@@ -62,23 +89,22 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
   }, [password])
 
   const onOpenChange = (open: boolean) => {
-    if (!open) onClose()
+    if (!open) {
+      form.reset();
+      setError(null);
+      onClose();
+    }
   }
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!valid) {
-      setError('Please complete all required fields and accept the terms.')
-      return
-    }
+  const onSubmit = async (data: SignupFormValues) => {
     setError(null)
     setSubmitting(true)
     try {
-      await register({
-        full_name: fullName,
-        email,
-        password,
-        phone,
+      await registerUser({
+        full_name: data.full_name,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
         role: 'subscriber',
       })
       onClose()
@@ -95,244 +121,320 @@ export function SignupModal({ isOpen, onClose, onRequestSignin }: SignupModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
-        {/* Premium Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-8 pt-8 pb-6 bg-gradient-to-r from-[#002366] to-[#059669] text-white relative overflow-hidden"
+      <DialogContent className="p-0 overflow-hidden sm:max-w-[550px] border-none bg-transparent shadow-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden"
         >
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
-          
-          <DialogHeader className="relative z-10">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <DialogTitle className="text-3xl font-bold">Join CIBN Library</DialogTitle>
+          {/* Premium Header */}
+          <div className="relative h-48 flex items-end px-8 pb-8 overflow-hidden bg-gradient-to-br from-[#002366] via-premium-navy to-premium-emerald">
+             {/* Animated decorative circles */}
+             <motion.div 
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 90, 0],
+              }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl" 
+            />
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.3, 1],
+                x: [0, 20, 0],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+              className="absolute -bottom-24 -left-12 w-64 h-64 bg-premium-gold/10 rounded-full blur-3xl" 
+            />
+
+            <div className="relative z-10 w-full">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <Badge variant="secondary" className="bg-premium-gold/20 text-premium-gold border-premium-gold/30 backdrop-blur-md px-3 py-1">
+                    Professional Access
+                  </Badge>
+                </div>
+                <DialogTitle className="text-4xl font-bold text-white tracking-tight">Join CIBN</DialogTitle>
+                <DialogDescription className="text-white/80 text-lg mt-1 font-medium">
+                  Professional Research & Learning
+                </DialogDescription>
+              </motion.div>
             </div>
-            <DialogDescription className="text-white/90 text-base">
-              Create your account and unlock access to professional resources
-            </DialogDescription>
-          </DialogHeader>
-          
-          {/* Benefits badges */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Badge variant="secondary" className="bg-white/20 text-white border-0 backdrop-blur-sm">
-              <CheckCircle2 className="w-3 h-3 mr-1" />Unlimited Access
-            </Badge>
-            <Badge variant="secondary" className="bg-white/20 text-white border-0 backdrop-blur-sm">
-              <Shield className="w-3 h-3 mr-1" />Secure & Private
-            </Badge>
+          </div>
+
+          {/* Body */}
+          <div className="px-8 py-8">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <AnimatePresence>
+                  {error && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="flex items-start gap-3 text-sm text-red-600 bg-red-50/50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 backdrop-blur-sm rounded-xl p-4 shadow-sm"
+                    >
+                      <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+                      <span className="font-medium leading-relaxed">{error}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="space-y-5">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name="full_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Full Name *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="John Smith"
+                              autoComplete="name"
+                              className="border-gray-200/50 dark:border-white/10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage className="font-medium ml-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Email *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="name@email.com"
+                                type="email"
+                                autoComplete="email"
+                                className="border-gray-200/50 dark:border-white/10"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="font-medium ml-1" />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Phone</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="+234..."
+                                type="tel"
+                                autoComplete="tel"
+                                className="border-gray-200/50 dark:border-white/10"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="font-medium ml-1" />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Password *</FormLabel>
+                            <FormControl>
+                              <div className="relative group">
+                                <Input 
+                                  type={showPw ? 'text' : 'password'} 
+                                  placeholder="••••••••"
+                                  autoComplete="new-password"
+                                  className="pr-12 border-gray-200/50 dark:border-white/10 font-mono"
+                                  {...field}
+                                />
+                                <button 
+                                  type="button" 
+                                  onClick={()=>setShowPw(s=>!s)} 
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-premium-emerald transition-colors p-1"
+                                >
+                                  {showPw ? <EyeOff className="w-5 h-5 transition-transform group-hover:scale-110" /> : <Eye className="w-5 h-5 transition-transform group-hover:scale-110" />}
+                                </button>
+                              </div>
+                            </FormControl>
+                            
+                             {field.value && field.value.length > 0 && (
+                              <div className="space-y-1.5 mt-2 px-1">
+                                <div className="flex gap-1.5">
+                                  {[...Array(5)].map((_, i) => (
+                                    <div 
+                                      key={i} 
+                                      className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                                        i < passwordStrength.score ? passwordStrength.color : 'bg-gray-200 dark:bg-white/5'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <FormMessage className="font-medium ml-1" />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-gray-600 dark:text-gray-400 font-semibold ml-1">Confirm *</FormLabel>
+                            <FormControl>
+                              <div className="relative group">
+                                <Input 
+                                  type={showConfirmPw ? 'text' : 'password'} 
+                                  placeholder="••••••••"
+                                  autoComplete="new-password"
+                                  className="pr-12 border-gray-200/50 dark:border-white/10 font-mono"
+                                  {...field}
+                                />
+                                <button 
+                                  type="button" 
+                                  onClick={()=>setShowConfirmPw(s=>!s)} 
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-premium-emerald transition-colors p-1"
+                                >
+                                  {showConfirmPw ? <EyeOff className="w-5 h-5 transition-transform group-hover:scale-110" /> : <Eye className="w-5 h-5 transition-transform group-hover:scale-110" />}
+                                </button>
+                              </div>
+                            </FormControl>
+                            <FormMessage className="font-medium ml-1" />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+                  </div>
+                </div>
+
+                <motion.div
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   transition={{ delay: 0.8 }}
+                >
+                   <FormField
+                    control={form.control}
+                    name="agree"
+                    render={({ field }) => (
+                      <FormItem className="space-y-0">
+                        <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-all cursor-pointer group shadow-sm hover:shadow-md">
+                          <FormControl>
+                            <input 
+                              type="checkbox" 
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="mt-1 w-5 h-5 rounded-lg border-gray-300 text-premium-emerald focus:ring-premium-emerald transition-all"
+                            />
+                          </FormControl>
+                          <span className="text-sm text-gray-500 font-medium leading-relaxed select-none">
+                            I accept the{' '}
+                            <span className="text-premium-navy dark:text-premium-emerald font-bold hover:underline">Terms</span>
+                            {' '}and{' '}
+                            <span className="text-premium-navy dark:text-premium-emerald font-bold hover:underline">Privacy Policy</span>
+                          </span>
+                        </div>
+                        <FormMessage className="ml-1 mt-2" />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+
+                <motion.div
+                   initial={{ opacity: 0, scale: 0.95 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   transition={{ delay: 0.9 }}
+                >
+                  <Button 
+                    type="submit" 
+                    variant="premium"
+                    size="lg"
+                    className="w-full"
+                    disabled={submitting || isLoading}
+                  >
+                    {submitting || isLoading ? (
+                      <>
+                        <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+                        Securing Account...
+                      </>
+                    ) : (
+                      <>
+                        Create Account
+                        <Sparkles className="w-5 h-5 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+
+                <motion.div 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   transition={{ delay: 1 }}
+                   className="text-center pt-4"
+                >
+                  <p className="text-sm text-gray-400 font-medium">
+                    Already an associate?{' '}
+                    <button 
+                      type="button" 
+                      onClick={()=>{ onClose(); onRequestSignin?.() }} 
+                      className="text-premium-navy dark:text-premium-emerald font-bold hover:underline"
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                </motion.div>
+              </form>
+            </Form>
           </div>
         </motion.div>
-
-        {/* Body */}
-        <div className="px-8 py-6">
-          <form onSubmit={onSubmit} className="space-y-5">
-            <AnimatePresence>
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"
-                >
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="su-fullname" className="text-gray-700 font-medium">
-                <User className="w-4 h-4 inline mr-2" />
-                Full Name
-              </Label>
-              <Input 
-                id="su-fullname" 
-                value={fullName} 
-                onChange={(e)=>setFullName(e.target.value)} 
-                onClear={() => setFullName('')}
-                placeholder="Enter your full name"
-                className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
-              />
-            </div>
-
-            {/* Email & Phone */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="su-email" className="text-gray-700 font-medium">
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Email Address
-                </Label>
-                <Input 
-                  id="su-email" 
-                  type="email" 
-                  value={email} 
-                  onChange={(e)=>setEmail(e.target.value)} 
-                  onClear={() => setEmail('')}
-                  placeholder="your.email@example.com"
-                  className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="su-phone" className="text-gray-700 font-medium">
-                  <Phone className="w-4 h-4 inline mr-2" />
-                  Phone <span className="text-gray-400 text-xs">(optional)</span>
-                </Label>
-                <Input 
-                  id="su-phone" 
-                  type="tel"
-                  value={phone} 
-                  onChange={(e)=>setPhone(e.target.value)} 
-                  onClear={() => setPhone('')}
-                  placeholder="+234 800 000 0000"
-                  className="h-11 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
-                />
-              </div>
-            </div>
-
-            {/* Password Fields */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="su-password" className="text-gray-700 font-medium">
-                  <Lock className="w-4 h-4 inline mr-2" />
-                  Password
-                </Label>
-                <div className="relative">
-                  <Input 
-                    id="su-password" 
-                    type={showPw ? 'text' : 'password'} 
-                    value={password} 
-                    onChange={(e)=>setPassword(e.target.value)} 
-                    onClear={() => setPassword('')}
-                    placeholder="Create a strong password"
-                    className="h-11 pr-10 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={()=>setShowPw(s=>!s)} 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {password && password.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div 
-                          key={i} 
-                          className={`h-1 flex-1 rounded-full transition-all ${
-                            i < passwordStrength.score ? passwordStrength.color : 'bg-gray-200'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      Password strength: <span className={`font-semibold ${passwordStrength.score <= 2 ? 'text-red-600' : passwordStrength.score <= 3 ? 'text-yellow-600' : 'text-green-600'}`}>{passwordStrength.label}</span>
-                    </p>
-                  </div>
-                )}
-                {password && password.length > 0 && password.length < 6 && (
-                  <div className="flex items-start gap-1 text-xs text-red-600">
-                    <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>Must be at least 6 characters</span>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="su-confirm" className="text-gray-700 font-medium">
-                  <Lock className="w-4 h-4 inline mr-2" />
-                  Confirm Password
-                </Label>
-                <div className="relative">
-                  <Input 
-                    id="su-confirm" 
-                    type={showConfirmPw ? 'text' : 'password'} 
-                    value={confirmPassword} 
-                    onChange={(e)=>setConfirmPassword(e.target.value)} 
-                    onClear={() => setConfirmPassword('')}
-                    placeholder="Confirm your password"
-                    className="h-11 pr-10 border-gray-300 focus:border-[#059669] focus:ring-[#059669]"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={()=>setShowConfirmPw(s=>!s)} 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {confirmPassword && confirmPassword !== password && (
-                  <div className="flex items-start gap-1 text-xs text-red-600">
-                    <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>Passwords do not match</span>
-                  </div>
-                )}
-                {confirmPassword && confirmPassword === password && password.length >= 6 && (
-                  <div className="flex items-start gap-1 text-xs text-green-600">
-                    <CheckCircle2 className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>Passwords match</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Terms checkbox */}
-            <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer group">
-              <input 
-                type="checkbox" 
-                checked={agree} 
-                onChange={(e)=>setAgree(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-gray-300 text-[#059669] focus:ring-[#059669]"
-              />
-              <span className="text-sm text-gray-700 leading-relaxed">
-                I agree to the{' '}
-                <a href="/terms" className="text-[#059669] hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Terms of Service</a>
-                {' '}and{' '}
-                <a href="/privacy" className="text-[#059669] hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Privacy Policy</a>
-              </span>
-            </label>
-
-            {/* Submit button */}
-            <Button 
-              type="submit" 
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-[#059669] to-[#048558] hover:from-[#048558] hover:to-[#037347] text-white shadow-lg hover:shadow-xl transition-all" 
-              disabled={!valid || submitting || isLoading}
-            >
-              {submitting || isLoading ? (
-                <>
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Creating your account...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create Account
-                </>
-              )}
-            </Button>
-
-            {/* Sign in link */}
-            <div className="text-center pt-2 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                Already have an account?{' '}
-                <button 
-                  type="button" 
-                  onClick={()=>{ onClose(); onRequestSignin?.() }} 
-                  className="text-[#002366] hover:text-[#059669] font-semibold hover:underline cursor-pointer transition-colors"
-                >
-                  Sign in
-                </button>
-              </p>
-            </div>
-          </form>
-        </div>
       </DialogContent>
     </Dialog>
   )
