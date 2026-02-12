@@ -206,7 +206,7 @@ def delete_content(
         )
     
     try:
-        # Check if content has purchases or orders
+        # Check if content has COMPLETED purchases
         purchase_count = db.query(func.count(Purchase.id)).filter(Purchase.content_id == content_id).scalar()
         if purchase_count > 0:
             raise HTTPException(
@@ -214,6 +214,13 @@ def delete_content(
                 detail=f"Cannot delete content with {purchase_count} purchases. Consider deactivating instead."
             )
         
+        # Delete related OrderItems (pending/abandoned carts)
+        db.query(OrderItem).filter(OrderItem.content_id == content_id).delete()
+        
+        # Delete related ContentProgress
+        db.query(ContentProgress).filter(ContentProgress.content_id == content_id).delete()
+
+        # Delete the content
         db.delete(content)
         db.commit()
     except HTTPException:
