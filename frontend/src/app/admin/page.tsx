@@ -1,24 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { 
-  BarChart3, Users, BookOpen, ShoppingCart, TrendingUp, DollarSign, Upload, 
-  FileText, Video, Headphones, Plus, Edit, Trash2, Eye, Download, Star, Clock,
-  Settings, LogOut, Search, Filter, Grid, List, AlertCircle, CheckCircle
-} from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAuth } from '@/contexts/AuthContext'
 import { motion } from 'framer-motion'
+import {
+    BookOpen,
+    CircleHelp,
+    DollarSign,
+    Edit,
+    Eye,
+    FileText,
+    Filter, Grid,
+    Headphones,
+    List,
+    LogOut,
+    Plus,
+    Search,
+    Settings,
+    ShoppingCart,
+    Trash2,
+    Users,
+    Video
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { lazy, Suspense, useEffect, useState } from 'react'
+
+const AdminUserGuide = lazy(() => import('@/components/admin/AdminUserGuide'))
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -194,11 +206,15 @@ export default function AdminDashboard() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-muted/50 p-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="guide" className="flex items-center gap-2">
+              <CircleHelp className="h-4 w-4" />
+              Guide
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -431,6 +447,13 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Guide Tab */}
+          <TabsContent value="guide" className="space-y-8">
+            <Suspense fallback={<div className="flex justify-center p-8 text-gray-500">Loading guide...</div>}>
+              <AdminUserGuide />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>

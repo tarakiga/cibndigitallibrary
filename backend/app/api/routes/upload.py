@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 from typing import Optional
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 from app.api.dependencies import require_admin
 from app.models import User
 from app.core.config import settings
@@ -27,7 +29,8 @@ def get_file_type(filename: str, allowed_extensions: dict[str, list[str]]) -> Op
 async def upload_file(
     request: Request,
     file: UploadFile = File(...),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)  # Inject DB session
 ):
     """
     Upload a file to the server.
@@ -43,7 +46,25 @@ async def upload_file(
             )
         
         allowed_extensions = settings.UPLOAD_ALLOWED_EXTENSIONS
-        max_file_sizes = settings.UPLOAD_MAX_FILE_SIZES
+        
+        # Fetch max sizes from DB (Upload Settings)
+        from app.models.settings import UploadSettings
+        upload_settings = db.query(UploadSettings).first()
+        
+        if upload_settings:
+            # Use DB settings if available
+            # Note: DB stores None for unlimited, logic below handles None as unlimited if we adapt it.
+            # Existing logic: get(type, default). If we want None to match DB semantics?
+            # Config default has None for video/audio.
+            max_file_sizes = {
+                "document": upload_settings.max_file_size_document,
+                "video": upload_settings.max_file_size_video,
+                "audio": upload_settings.max_file_size_audio,
+                "image": upload_settings.max_file_size_image
+            }
+        else:
+            # Fallback to env/file config
+            max_file_sizes = settings.UPLOAD_MAX_FILE_SIZES
 
         file_type = get_file_type(file.filename, allowed_extensions)
         if not file_type:
@@ -58,12 +79,29 @@ async def upload_file(
         file_size = file.file.tell()
         file.file.seek(0)  # Seek back to start
         
-        # Get max size (None means no limit)
-        max_size = max_file_sizes.get(file_type, 50 * 1024 * 1024)
+        # Get max size
+        # If type not in dict, default to 50MB (safe fallback)
+        # If key exists but value is None (unlimited), max_size becomes None
+        max_size = max_file_sizes.get(file_type)
+        if max_size is None and file_type not in max_file_sizes:
+             # If key missing entirely, use 50MB fallback for safety, unless strict. 
+             # But here we populated dictionary fully from DB model fields which are nullable.
+             # If DB has None, it means unlimited.
+             # If config has missing key? Config defaults are comprehensive.
+             pass
+             
+        # Use a safe default for unknown types if dictionary lookups fail to return a value (key missing)
+        # But max_file_sizes has keys "document", "video", etc.
+        # If file_type is valid but key missing?
+        if file_type not in max_file_sizes:
+             max_size = 50 * 1024 * 1024 # 50MB default default
+        else:
+             max_size = max_file_sizes[file_type]
+
         if max_size is not None and file_size > max_size:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"File too large. Maximum size for {file_type}: {max_size / 1024 / 1024}MB"
+                detail=f"File too large. Maximum size for {file_type}: {max_size / 1024 / 1024:.2f}MB"
             )
         
         # Generate unique filename

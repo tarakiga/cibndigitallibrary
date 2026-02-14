@@ -21,6 +21,21 @@ class PaymentSettings(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class UploadSettings(Base):
+    """Store configuration for file uploads."""
+    __tablename__ = "upload_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Max file sizes in bytes
+    max_file_size_document = Column(Integer, default=524288000)  # Default 500MB
+    max_file_size_video = Column(Integer, nullable=True)  # Null means unlimited
+    max_file_size_audio = Column(Integer, nullable=True)
+    max_file_size_image = Column(Integer, default=10485760)  # Default 10MB
+    
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class EmailSettings(Base):
     """Store SMTP configuration for email sending (e.g., Microsoft 365)."""
     __tablename__ = "email_settings"

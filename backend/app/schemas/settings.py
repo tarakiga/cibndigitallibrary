@@ -48,3 +48,22 @@ class EmailSettingsUpdate(BaseModel):
 class EmailTestRequest(BaseModel):
     """Request schema for sending a test email."""
     recipient_email: EmailStr
+
+
+class UploadSettingsResponse(BaseModel):
+    """Response schema for upload settings."""
+    max_file_size_document: Optional[int] = 524288000
+    max_file_size_video: Optional[int] = None
+    max_file_size_audio: Optional[int] = None
+    max_file_size_image: Optional[int] = 10485760
+    
+    class Config:
+        from_attributes = True
+
+
+class UploadSettingsUpdate(BaseModel):
+    """Update schema for upload settings."""
+    max_file_size_document: Optional[int] = None
+    max_file_size_video: Optional[int] = None
+    max_file_size_audio: Optional[int] = None
+    max_file_size_image: Optional[int] = None

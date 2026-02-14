@@ -62,6 +62,22 @@ export function ContentFormSlideout({
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false)
   const [fileUploadComplete, setFileUploadComplete] = useState(false)
   const [thumbnailUploadComplete, setThumbnailUploadComplete] = useState(false)
+  const [uploadLimits, setUploadLimits] = useState<any>(null)
+  
+  // Fetch upload limits on mount
+  useEffect(() => {
+    const fetchLimits = async () => {
+      try {
+        const { adminSettingsApi } = await import('@/lib/api/admin');
+        const limits = await adminSettingsApi.getUploadSettings();
+        setUploadLimits(limits);
+      } catch (error) {
+        console.error('Failed to load upload limits:', error);
+      }
+    };
+    fetchLimits();
+  }, []);
+
   const [formData, setFormData] = useState<ContentFormData>({
     title: '',
     description: '',
@@ -159,6 +175,18 @@ export function ContentFormSlideout({
   }
 
   const handleFileUpload = useCallback(async (file: File) => {
+    // Validate file size against dynamic limits
+    if (uploadLimits) {
+      const typeKey = `max_file_size_${formData.content_type}`;
+      // @ts-ignore
+      const limit = uploadLimits[typeKey];
+      
+      if (limit !== null && limit !== undefined && file.size > limit) {
+        alert(`File size exceeds the limit of ${(limit / (1024 * 1024)).toFixed(0)}MB.`);
+        return;
+      }
+    }
+
     setIsUploadingFile(true)
     setFileUploadProgress(0)
     setFileUploadComplete(false)
@@ -176,6 +204,15 @@ export function ContentFormSlideout({
   }, [])
 
   const handleThumbnailUpload = useCallback(async (file: File) => {
+    // Validate thumbnail size
+    if (uploadLimits) {
+      const limit = uploadLimits['max_file_size_image'];
+      if (limit !== null && limit !== undefined && file.size > limit) {
+        alert(`Thumbnail size exceeds the limit of ${(limit / (1024 * 1024)).toFixed(0)}MB.`);
+        return;
+      }
+    }
+
     setIsUploadingThumbnail(true)
     setThumbnailUploadProgress(0)
     setThumbnailUploadComplete(false)

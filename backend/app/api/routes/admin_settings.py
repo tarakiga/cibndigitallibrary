@@ -171,3 +171,67 @@ def test_email_settings(payload: EmailTestRequest, db: Session = Depends(get_db)
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send test email. Please check your SMTP configuration."
         )
+
+
+# ============== Upload Settings ==============
+
+from app.models.settings import UploadSettings
+from app.schemas.settings import UploadSettingsResponse, UploadSettingsUpdate
+
+def ensure_upload_singleton(db: Session) -> UploadSettings:
+    settings_obj = db.query(UploadSettings).first()
+    if not settings_obj:
+        settings_obj = UploadSettings()
+        db.add(settings_obj)
+        db.commit()
+        db.refresh(settings_obj)
+    return settings_obj
+
+
+@router.get("/upload", response_model=UploadSettingsResponse)
+def get_upload_settings(db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Get current file upload size limits."""
+    s = ensure_upload_singleton(db)
+    return UploadSettingsResponse(
+        max_file_size_document=s.max_file_size_document,
+        max_file_size_video=s.max_file_size_video,
+        max_file_size_audio=s.max_file_size_audio,
+        max_file_size_image=s.max_file_size_image,
+    )
+
+
+@router.put("/upload", response_model=UploadSettingsResponse)
+def update_upload_settings(payload: UploadSettingsUpdate, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    """Update file upload size limits."""
+    s = ensure_upload_singleton(db)
+    
+    # Only update if value is provided (None means no change) 
+    # BUT wait, how to unset a value? 
+    # For now, let's assume we can pass specific large numbers or null if our schema allowed optional nulls explicitly
+    # Schema says Optional[int], so None means "do not update".
+    # To unset (set to unlimited), checking if payload has field set is tricky in Pydantic v1 vs v2.
+    # We'll assume if it's in payload.dict(exclude_unset=True)
+    
+    updates = payload.dict(exclude_unset=True)
+    
+    if "max_file_size_document" in updates:
+        s.max_file_size_document = updates["max_file_size_document"]
+    
+    if "max_file_size_video" in updates:
+        s.max_file_size_video = updates["max_file_size_video"]
+        
+    if "max_file_size_audio" in updates:
+        s.max_file_size_audio = updates["max_file_size_audio"]
+        
+    if "max_file_size_image" in updates:
+        s.max_file_size_image = updates["max_file_size_image"]
+    
+    db.commit()
+    db.refresh(s)
+    
+    return UploadSettingsResponse(
+        max_file_size_document=s.max_file_size_document,
+        max_file_size_video=s.max_file_size_video,
+        max_file_size_audio=s.max_file_size_audio,
+        max_file_size_image=s.max_file_size_image,
+    )

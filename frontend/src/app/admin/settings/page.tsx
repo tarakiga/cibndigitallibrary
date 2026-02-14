@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { adminSettingsApi, type PaymentSettingsResponse } from '@/lib/api/admin';
 import { contentService, type Content, type ContentCategory, type ContentType } from '@/lib/api/content';
 import { uploadService } from '@/lib/api/upload';
-import { BarChart3, BookOpen, CreditCard, FileText, Mail, Package } from 'lucide-react';
+import { BookOpen, ChartBar, CircleHelp, CreditCard, FileText, Mail, Package, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -56,8 +56,18 @@ const ContentFormSlideout = dynamic(
   { ssr: false }
 );
 
+const AdminUserGuide = dynamic(
+  () => import('@/components/admin/AdminUserGuide'),
+  { ssr: false, loading: () => <div>Loading guide...</div> }
+);
+
+const UploadSettingsSection = dynamic(
+  () => import('./components/UploadSettingsSection').then(mod => mod.UploadSettingsSection),
+  { ssr: false, loading: () => <div>Loading upload settings...</div> }
+);
+
 // Types
-type ActiveTab = 'library' | 'payments' | 'settings';
+type ActiveTab = 'library' | 'upload' | 'payments' | 'settings' | 'guide';
 
 interface LibraryItem {
   id: string
@@ -89,8 +99,10 @@ interface LibraryFormData {
 
 const navItems = [
   { id: 'library' as const, label: 'Library', icon: <BookOpen className="w-4 h-4" /> },
+  { id: 'upload' as const, label: 'Upload', icon: <Upload className="w-4 h-4" /> },
   { id: 'payments' as const, label: 'Payments', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'settings' as const, label: 'Email Setup', icon: <Mail className="w-4 h-4" /> },
+  { id: 'guide' as const, label: 'Guide', icon: <CircleHelp className="w-4 h-4" /> },
 ];
 
 export default function AdminSettingsPage() {
@@ -440,7 +452,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center gap-3">
               <div className="px-4 py-2 bg-gradient-to-r from-[#002366] to-[#059669] text-white rounded-lg shadow-sm">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
+                  <ChartBar className="w-4 h-4" />
                   <span className="text-sm font-medium">{libraryItems.length} Total Items</span>
                 </div>
               </div>
@@ -647,6 +659,12 @@ export default function AdminSettingsPage() {
               </div>
             )}
 
+            {activeTab === 'upload' && (
+              <div className="space-y-6">
+                <UploadSettingsSection />
+              </div>
+            )}
+
             {activeTab === 'payments' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-medium">Payment Settings</h2>
@@ -673,6 +691,12 @@ export default function AdminSettingsPage() {
             {activeTab === 'settings' && (
               <div className="space-y-6">
                 <EmailSettingsSection />
+              </div>
+            )}
+
+            {activeTab === 'guide' && (
+              <div className="space-y-6">
+                <AdminUserGuide />
               </div>
             )}
           </div>

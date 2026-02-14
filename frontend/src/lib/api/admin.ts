@@ -73,8 +73,33 @@ export interface UploadResponse {
   size: number;
 }
 
+export interface UploadSettingsResponse {
+  max_file_size_document: number | null;
+  max_file_size_video: number | null;
+  max_file_size_audio: number | null;
+  max_file_size_image: number | null;
+}
+
+export interface UploadSettingsUpdate {
+  max_file_size_document?: number | null;
+  max_file_size_video?: number | null;
+  max_file_size_audio?: number | null;
+  max_file_size_image?: number | null;
+}
+
 // Admin API service
 export const adminSettingsApi = {
+  // Upload Settings
+  async getUploadSettings(): Promise<UploadSettingsResponse> {
+    const res = await apiClient.get<UploadSettingsResponse>('/admin/settings/upload');
+    return res.data;
+  },
+
+  async updateUploadSettings(payload: UploadSettingsUpdate): Promise<UploadSettingsResponse> {
+    const res = await apiClient.put<UploadSettingsResponse>('/admin/settings/upload', payload);
+    return res.data;
+  },
+
   // Payment Settings
   async getPaymentSettings(): Promise<PaymentSettingsResponse> {
     const res = await apiClient.get<PaymentSettingsResponse>('/admin/settings/payments');
