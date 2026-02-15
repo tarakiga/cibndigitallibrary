@@ -49,13 +49,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Point to the local backend exposed on host
-        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+        NEXT_PUBLIC_API_URL: https://elibrary.cibng.org/api/v1
     container_name: cibn_frontend
     ports:
       - "3007:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_API_URL=https://elibrary.cibng.org/api/v1
     depends_on:
       - backend
     networks:
