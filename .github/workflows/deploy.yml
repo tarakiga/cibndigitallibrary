@@ -1,0 +1,121 @@
+name: Deploy to Huawei Server
+
+on:
+  push:
+    branches:
+      - main
+      - production
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -exuo pipefail
+            
+            # Error trap for diagnostics
+            trap 'echo "ERROR at line $LINENO: $BASH_COMMAND"; docker ps -a || true; docker logs --tail 200 cibn_backend_prod || true; exit 1' ERR
+            
+            # Diagnostics
+            echo "---- Remote diagnostics ----"
+            whoami
+            pwd
+            docker --version || true
+            
+            # Ensure directory exists
+            mkdir -p /home/cibndigitallibrary
+            cd /home/cibndigitallibrary
+            
+            # Pull latest changes
+            echo "📥 Pulling latest changes..."
+            if [ -d .git ]; then
+              git fetch origin main || true
+              git reset --hard origin/main || true
+            else
+              git clone https://github.com/tarakiga/cibndigitallibrary.git . || true
+            fi
+            
+            # Create .env from GitHub secret (safe single-line write)
+            set +x
+            echo "🔐 Creating .env from GitHub secret..."
+            printf '%s\n' "${{ secrets.DOTENV }}" > .env
+            chmod 600 .env
+            set -x
+            
+            # Ensure docker network exists
+            docker network inspect cibndigitallibrary_cibn_network >/dev/null 2>&1 || docker network create cibndigitallibrary_cibn_network
+            
+            # Deploy backend
+            echo "🔨 Building and deploying backend..."
+            docker stop cibn_backend_prod || true
+            docker rm cibn_backend_prod || true
+            docker-compose -f docker-compose.prod.yml build --no-cache backend
+            docker run -d \
+              --name cibn_backend_prod \
+              --network cibndigitallibrary_cibn_network \
+              -p 8000:8000 \
+              --env-file /home/cibndigitallibrary/.env \
+              --restart unless-stopped \
+              -v uploads_data:/app/uploads \
+              cibndigitallibrary_backend
+            
+            # Deploy frontend
+            echo "🔨 Building and deploying frontend..."
+            docker stop cibn_frontend_prod || true
+            docker rm cibn_frontend_prod || true
+            docker rmi cibndigitallibrary_frontend || true
+            docker build \
+              --build-arg NEXT_PUBLIC_API_URL=http://83.101.49.191:8000/api/v1 \
+              --no-cache \
+              -t cibndigitallibrary_frontend \
+              -f frontend/Dockerfile \
+              frontend/
+            docker run -d \
+              --name cibn_frontend_prod \
+              --network cibndigitallibrary_cibn_network \
+              -p 3000:3000 \
+              -e NODE_ENV=production \
+              --restart unless-stopped \
+              cibndigitallibrary_frontend
+            
+            # Check container status and logs
+            echo "✅ Checking container status..."
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "---- Backend logs (last 50 lines) ----"
+            docker logs --tail 50 cibn_backend_prod || true
+            echo "---- Frontend logs (last 50 lines) ----"
+            docker logs --tail 50 cibn_frontend_prod || true
+            
+            # Clean up old images
+            echo "🧹 Cleaning up old Docker images..."
+            docker system prune -f
+            
+            echo "🎉 Deployment completed successfully!"
+
+      - name: Health Check
+        run: |
+          echo "🏥 Waiting for services to be healthy..."
+          sleep 60
+          curl -f http://83.101.49.191:8000/health || echo "⚠️  Backend health check failed"
+          curl -f http://83.101.49.191:3000 || echo "⚠️  Frontend health check failed"
+
+      - name: Notify Deployment Status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
