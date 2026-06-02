@@ -33,6 +33,7 @@ services:
     container_name: cibn_backend_prod
     restart: unless-stopped
     environment:
+      APP_ENV: ${APP_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS}
