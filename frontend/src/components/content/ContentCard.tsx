@@ -230,13 +230,20 @@ export function ContentCard({
         {/* Thumbnail/Image */}
         <div className={`relative ${viewMode === 'list' ? 'w-48' : 'h-48'} bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden`}>
           {item.thumbnail_url ? (
-            <img 
-              src={item.thumbnail_url} 
+            <img
+              src={item.thumbnail_url}
               alt={item.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => { e.currentTarget.src = '/content-placeholder.jpg'; }}
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#002366]/10 to-[#059669]/10">
+            <div className="absolute inset-0">
+              {/* Branded default placeholder when no thumbnail is provided */}
+              <img
+                src="/content-placeholder.jpg"
+                alt={item.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
               <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-300"></div>
               <div className="absolute top-4 left-4">
                 <Badge className={`${getTypeColor(item.content_type)} px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1`}>
