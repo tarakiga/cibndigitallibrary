@@ -304,11 +304,13 @@ export default function AdminSettingsPage() {
 
   // Handle toggle active status
   const handleToggleActiveStatus = async (item: any) => {
-    const action = item.isActive ? 'deactivate' : 'activate';
+    const archiving = item.isActive;
+    const action = archiving ? 'archive' : 'retrieve';
+    const past = archiving ? 'archived' : 'retrieved';
     if (confirm(`Are you sure you want to ${action} "${item.title}"?`)) {
       try {
         await contentService.updateContent(parseInt(item.id), { is_active: !item.isActive });
-        toast.success(`Content ${action}d successfully`);
+        toast.success(`Content ${past} successfully`);
         await fetchLibraryItems();
       } catch (error: any) {
         console.error(`Failed to ${action} content:`, error);
@@ -599,7 +601,7 @@ export default function AdminSettingsPage() {
                             category: content.category as ContentCategory,
                             price: content.price,
                             is_exclusive: content.isExclusive,
-                            is_active: true,
+                            is_active: content.isActive !== undefined ? content.isActive : true,
                             stock_quantity: 0,
                             file_url: content.fileUrl,
                             thumbnail_url: content.image

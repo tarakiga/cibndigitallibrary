@@ -22,8 +22,9 @@ import {
     FileText, Headphones,
     MoreVertical,
     Package,
+    Archive,
+    ArchiveRestore,
     Play,
-    Power,
     Trash2,
     Video
 } from 'lucide-react'
@@ -145,8 +146,12 @@ export function ContentManagementCard({
               )}
               {onToggleActive && (
                 <DropdownMenuItem onClick={() => onToggleActive(content)}>
-                  <Power className={`mr-2 h-4 w-4 ${!content.isActive ? 'text-green-600' : ''}`} />
-                  {!content.isActive ? 'Activate' : 'Deactivate'}
+                  {!content.isActive ? (
+                    <ArchiveRestore className="mr-2 h-4 w-4 text-green-600" />
+                  ) : (
+                    <Archive className="mr-2 h-4 w-4" />
+                  )}
+                  {!content.isActive ? 'Retrieve' : 'Archive'}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -162,7 +167,14 @@ export function ContentManagementCard({
         </div>
 
         {/* Thumbnail/Icon Area */}
-        <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+        <div className={`relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden ${!content.isActive ? 'opacity-60 grayscale' : ''}`}>
+          {!content.isActive && (
+            <div className="absolute top-3 right-3 z-10">
+              <Badge className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                <Archive className="w-3 h-3" /> Archived
+              </Badge>
+            </div>
+          )}
           {content.image ? (
             <img 
               src={content.image} 
