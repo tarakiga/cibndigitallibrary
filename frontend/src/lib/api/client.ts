@@ -135,9 +135,11 @@ apiClient.interceptors.response.use(
       if (response?.status === 401 && config && typeof window !== "undefined") {
         const originalRequest = config as RetryConfig;
 
-        // Skip token refresh for login/register endpoints (no token needed)
+        // Skip token refresh for auth endpoints. Critically, /auth/refresh must be
+        // excluded — refreshing on a 401 from refresh itself causes an infinite loop
+        // (e.g. when a stored token is invalid after a SECRET_KEY rotation).
         const url = config.url || '';
-        if (url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/cibn-login')) {
+        if (url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/cibn-login') || url.includes('/auth/refresh')) {
           return Promise.reject(error);
         }
 
